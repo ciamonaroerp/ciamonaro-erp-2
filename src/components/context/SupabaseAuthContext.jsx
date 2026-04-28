@@ -22,6 +22,22 @@ export function SupabaseAuthProvider({ children }) {
           if (!cancelled) setReady(true);
           return;
         }
+        
+        // Limpa sessão corrompida do localStorage antes de carregar
+        try {
+          const stored = localStorage.getItem('erp_sb_session_v2');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            // Se a sessão armazenada está corrompida ou expirada, limpa
+            if (!parsed || !parsed.session || !parsed.session.user) {
+              localStorage.removeItem('erp_sb_session_v2');
+            }
+          }
+        } catch (e) {
+          // JSON inválido, remove
+          localStorage.removeItem('erp_sb_session_v2');
+        }
+        
         // Verifica sessão ativa no Supabase
         const { data: { session: currentSession } } = await supabase.auth.getSession();
 
@@ -48,6 +64,7 @@ export function SupabaseAuthProvider({ children }) {
         }
       } catch (err) {
         console.warn('[SupabaseAuth] Erro ao inicializar:', err.message);
+        if (!cancelled) setSession(null);
       } finally {
         if (!cancelled) setReady(true);
       }
