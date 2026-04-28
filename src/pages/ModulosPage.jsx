@@ -26,7 +26,7 @@ export default function ModulosPage() {
     queryKey: ["modulos-erp-ordenados", empresa_id],
     queryFn: async () => {
       if (!supabase || !empresa_id) return [];
-      const { data } = await supabase.from("modulos_erp").select("*").eq("empresa_id", empresa_id).order("ordem_modulo", { ascending: true });
+      const { data } = await supabase.from("modulos_erp").select("*").order("ordem_modulo", { ascending: true });
       return data || [];
     },
     enabled: !!empresa_id && !empresaLoading,
