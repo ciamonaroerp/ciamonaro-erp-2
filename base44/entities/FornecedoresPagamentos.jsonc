@@ -1,0 +1,47 @@
+{
+  "name": "FornecedoresPagamentos",
+  "type": "object",
+  "properties": {
+    "empresa_id": {
+      "type": "string",
+      "description": "UUID da empresa"
+    },
+    "fornecedor_id": {
+      "type": "string",
+      "description": "UUID do fornecedor (FK \u2192 fornecedores.id)"
+    },
+    "cpf_cnpj_titular": {
+      "type": "string",
+      "description": "CPF ou CNPJ do titular da conta"
+    },
+    "banco_codigo": {
+      "type": "string",
+      "description": "C\u00f3digo BACEN do banco"
+    },
+    "banco_nome": {
+      "type": "string"
+    },
+    "agencia": {
+      "type": "string"
+    },
+    "conta": {
+      "type": "string"
+    },
+    "pix_tipo": {
+      "type": "string",
+      "enum": [
+        "CPF/CNPJ",
+        "E-mail",
+        "Telefone",
+        "Chave aleat\u00f3ria"
+      ]
+    },
+    "pix_chave": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "empresa_id",
+    "fornecedor_id"
+  ]
+}

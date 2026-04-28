@@ -1,0 +1,64 @@
+{
+  "name": "AuditLogs",
+  "type": "object",
+  "properties": {
+    "usuario_id": {
+      "type": "string",
+      "description": "ID do usu\u00e1rio ErpUsuarios que realizou a a\u00e7\u00e3o"
+    },
+    "usuario_email": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio que realizou a a\u00e7\u00e3o"
+    },
+    "acao": {
+      "type": "string",
+      "enum": [
+        "criar",
+        "editar",
+        "inativar",
+        "ativar",
+        "deletar",
+        "login",
+        "logout",
+        "enviar_convite",
+        "sincronizar",
+        "configurar",
+        "outro"
+      ],
+      "description": "Tipo de a\u00e7\u00e3o realizada"
+    },
+    "entidade": {
+      "type": "string",
+      "description": "Nome da entidade afetada (ex: ErpUsuarios, Clientes, Pedidos)"
+    },
+    "registro_id": {
+      "type": "string",
+      "description": "ID do registro afetado"
+    },
+    "dados_anteriores": {
+      "type": "string",
+      "description": "Estado anterior do registro em JSON (para edi\u00e7\u00f5es)"
+    },
+    "dados_novos": {
+      "type": "string",
+      "description": "Novo estado do registro em JSON"
+    },
+    "ip_origem": {
+      "type": "string",
+      "description": "IP de origem da requisi\u00e7\u00e3o"
+    },
+    "modulo": {
+      "type": "string",
+      "description": "M\u00f3dulo do ERP onde a a\u00e7\u00e3o ocorreu"
+    },
+    "data_evento": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data e hora do evento"
+    }
+  },
+  "required": [
+    "acao",
+    "entidade"
+  ]
+}

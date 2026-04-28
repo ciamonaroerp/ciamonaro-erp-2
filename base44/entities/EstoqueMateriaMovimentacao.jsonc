@@ -1,0 +1,62 @@
+{
+  "name": "EstoqueMateriaMovimentacao",
+  "type": "object",
+  "properties": {
+    "empresa_id": {
+      "type": "string",
+      "description": "UUID da empresa (FK \u2192 empresas.id)"
+    },
+    "materia_prima_id": {
+      "type": "string",
+      "description": "UUID da mat\u00e9ria-prima (FK \u2192 materias_primas.id)"
+    },
+    "tipo_movimento": {
+      "type": "string",
+      "enum": [
+        "Entrada",
+        "Sa\u00edda",
+        "Ajuste",
+        "Transfer\u00eancia"
+      ],
+      "description": "Tipo de movimenta\u00e7\u00e3o de estoque"
+    },
+    "quantidade": {
+      "type": "number",
+      "description": "Quantidade movimentada (positivo ou negativo conforme o tipo)"
+    },
+    "saldo_anterior": {
+      "type": "number",
+      "default": 0,
+      "description": "Saldo antes do movimento"
+    },
+    "saldo_atual": {
+      "type": "number",
+      "default": 0,
+      "description": "Saldo ap\u00f3s o movimento"
+    },
+    "motivo": {
+      "type": "string"
+    },
+    "ordem_producao_id": {
+      "type": "string",
+      "description": "UUID da OP de origem (FK \u2192 ordens_producao.id)"
+    },
+    "fornecedor_id": {
+      "type": "string",
+      "description": "UUID do fornecedor (FK \u2192 fornecedores.id)"
+    },
+    "usuario_id": {
+      "type": "string",
+      "description": "UUID do usu\u00e1rio respons\u00e1vel (FK \u2192 erp_usuarios.id)"
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "empresa_id",
+    "materia_prima_id",
+    "tipo_movimento",
+    "quantidade"
+  ]
+}

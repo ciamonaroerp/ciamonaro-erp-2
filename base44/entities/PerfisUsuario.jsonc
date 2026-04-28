@@ -1,0 +1,26 @@
+{
+  "name": "PerfisUsuario",
+  "type": "object",
+  "properties": {
+    "nome_perfil": {
+      "type": "string",
+      "description": "Nome do perfil de acesso"
+    },
+    "descricao": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o do perfil"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativo",
+        "Inativo"
+      ],
+      "default": "Ativo",
+      "description": "Status do perfil"
+    }
+  },
+  "required": [
+    "nome_perfil"
+  ]
+}

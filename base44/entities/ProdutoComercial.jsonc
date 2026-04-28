@@ -1,0 +1,29 @@
+{
+  "name": "ProdutoComercial",
+  "type": "object",
+  "properties": {
+    "empresa_id": {
+      "type": "string",
+      "description": "UUID da empresa"
+    },
+    "nome_produto": {
+      "type": "string",
+      "description": "Nome do produto comercial"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativo",
+        "Inativo"
+      ],
+      "default": "Ativo"
+    }
+  },
+  "required": [
+    "empresa_id",
+    "nome_produto"
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "name": "ConfigVinculos",
+  "type": "object",
+  "properties": {
+    "empresa_id": {
+      "type": "string",
+      "description": "ID da empresa (multi-tenant)"
+    },
+    "codigo_unico": {
+      "type": "string",
+      "description": "C\u00f3digo \u00fanico do v\u00ednculo (UUID gerado na cria\u00e7\u00e3o)"
+    },
+    "artigo_nome_comercial": {
+      "type": "string",
+      "description": "Nome comercial do artigo (snapshot no momento da cria\u00e7\u00e3o)"
+    },
+    "cor_nome_comercial": {
+      "type": "string",
+      "description": "Nome comercial da cor (snapshot no momento da cria\u00e7\u00e3o)"
+    },
+    "linha_comercial_nome": {
+      "type": "string",
+      "description": "Nome da linha comercial (snapshot no momento da cria\u00e7\u00e3o)"
+    },
+    "descricao_base": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o base original do produto"
+    },
+    "descricao_complementar": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o complementar original do produto"
+    },
+    "descricao_unificada": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o unificada: concatena\u00e7\u00e3o de descricao_complementar + descricao_base para busca simplificada"
+    },
+    "fornecedor_id": {
+      "type": "string",
+      "description": "CNPJ do fornecedor que originou este v\u00ednculo"
+    },
+    "deleted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data e hora da exclus\u00e3o l\u00f3gica (soft delete). Nulo se ativo."
+    }
+  },
+  "required": [
+    "empresa_id",
+    "codigo_unico",
+    "artigo_nome_comercial",
+    "cor_nome_comercial",
+    "linha_comercial_nome"
+  ]
+}

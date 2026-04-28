@@ -1,0 +1,27 @@
+{
+  "name": "ConfigTecidoArtigo",
+  "type": "object",
+  "properties": {
+    "empresa_id": {
+      "type": "string",
+      "description": "ID da empresa"
+    },
+    "codigo_artigo": {
+      "type": "string",
+      "description": "C\u00f3digo num\u00e9rico \u00fanico de 4 d\u00edgitos para o artigo"
+    },
+    "nome_artigo": {
+      "type": "string",
+      "description": "Nome do artigo de tecido"
+    },
+    "descricao": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o opcional do artigo"
+    }
+  },
+  "required": [
+    "empresa_id",
+    "codigo_artigo",
+    "nome_artigo"
+  ]
+}

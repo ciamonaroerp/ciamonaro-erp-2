@@ -1,0 +1,74 @@
+{
+  "name": "HistoricoPrecosProdutoErp",
+  "type": "object",
+  "properties": {
+    "empresa_id": {
+      "type": "string",
+      "description": "UUID da empresa (multi-tenant)"
+    },
+    "codigo_unico": {
+      "type": "string",
+      "description": "C\u00f3digo \u00fanico do v\u00ednculo (config_vinculos)"
+    },
+    "codigo_produto": {
+      "type": "string",
+      "description": "C\u00f3digo do produto na NF-e"
+    },
+    "descricao_original": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o original da NF-e"
+    },
+    "descricao_base": {
+      "type": "string"
+    },
+    "descricao_complementar": {
+      "type": "string"
+    },
+    "fornecedor_nome": {
+      "type": "string",
+      "description": "Nome/raz\u00e3o social do fornecedor"
+    },
+    "chave_danfe": {
+      "type": "string",
+      "description": "Chave de acesso da NF-e (44 d\u00edgitos)"
+    },
+    "numero_nf": {
+      "type": "string",
+      "description": "N\u00famero da nota fiscal"
+    },
+    "numero_item": {
+      "type": "integer",
+      "description": "N\u00famero do item dentro da nota"
+    },
+    "data_emissao": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data de emiss\u00e3o da NF-e"
+    },
+    "valor_unitario": {
+      "type": "number",
+      "description": "Valor unit\u00e1rio do item"
+    },
+    "quantidade": {
+      "type": "number",
+      "description": "Quantidade do item"
+    },
+    "valor_total": {
+      "type": "number",
+      "description": "Valor total do item"
+    },
+    "unidade": {
+      "type": "string",
+      "description": "Unidade de medida (UN, KG, MT, etc.)"
+    },
+    "dados_danfe": {
+      "type": "object",
+      "description": "Dados completos do item da NF-e em JSON"
+    }
+  },
+  "required": [
+    "empresa_id",
+    "chave_danfe",
+    "numero_item"
+  ]
+}

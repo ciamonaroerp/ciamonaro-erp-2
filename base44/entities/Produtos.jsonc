@@ -1,0 +1,66 @@
+{
+  "name": "Produtos",
+  "type": "object",
+  "properties": {
+    "empresa_id": {
+      "type": "string",
+      "description": "UUID da empresa (FK \u2192 empresas.id)"
+    },
+    "codigo": {
+      "type": "string",
+      "description": "C\u00f3digo SKU do produto"
+    },
+    "descricao": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o principal"
+    },
+    "descricao_complementar": {
+      "type": "string"
+    },
+    "categoria": {
+      "type": "string"
+    },
+    "tipo_produto": {
+      "type": "string",
+      "enum": [
+        "Mat\u00e9ria Prima",
+        "Produto Acabado",
+        "Insumo",
+        "Embalagem"
+      ],
+      "description": "Classifica\u00e7\u00e3o do produto"
+    },
+    "unidade_medida": {
+      "type": "string",
+      "default": "UN",
+      "description": "UN, KG, MT, LT, etc."
+    },
+    "preco_custo": {
+      "type": "number",
+      "default": 0
+    },
+    "preco_venda": {
+      "type": "number",
+      "default": 0
+    },
+    "peso_liquido": {
+      "type": "number"
+    },
+    "peso_bruto": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativo",
+        "Inativo"
+      ],
+      "default": "Ativo"
+    }
+  },
+  "required": [
+    "empresa_id",
+    "descricao",
+    "tipo_produto"
+  ]
+}

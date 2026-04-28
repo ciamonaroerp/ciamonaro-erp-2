@@ -1,0 +1,49 @@
+{
+  "name": "VinculoCadastro",
+  "type": "object",
+  "properties": {
+    "empresa_id": {
+      "type": "string",
+      "description": "UUID da empresa"
+    },
+    "fornecedor_nome": {
+      "type": "string",
+      "description": "Nome do fornecedor"
+    },
+    "fornecedor_cnpj": {
+      "type": "string",
+      "description": "CNPJ do fornecedor"
+    },
+    "codigo_produto_fornecedor": {
+      "type": "string",
+      "description": "C\u00f3digo do produto no fornecedor"
+    },
+    "descricao_produto_fornecedor": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o do produto no fornecedor"
+    },
+    "artigo": {
+      "type": "string",
+      "description": "Artigo interno"
+    },
+    "cor": {
+      "type": "string",
+      "description": "Cor interna"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativo",
+        "Inativo"
+      ],
+      "default": "Ativo"
+    }
+  },
+  "required": [
+    "empresa_id",
+    "fornecedor_nome",
+    "codigo_produto_fornecedor",
+    "artigo",
+    "cor"
+  ]
+}

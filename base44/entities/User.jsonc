@@ -1,0 +1,21 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "description": "The role of the user in the app",
+      "enum": [
+        "admin",
+        "user"
+      ]
+    },
+    "erp_usuario_id": {
+      "type": "string",
+      "description": "Identificador do usu\u00e1rio correspondente no CIAMONARO ERP (ERP_MASTER_DB - tabela USUARIOS). Campo opcional para integra\u00e7\u00e3o futura."
+    }
+  },
+  "required": [
+    "role"
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "name": "ChatComercial",
+  "type": "object",
+  "properties": {
+    "solicitacao_id": {
+      "type": "string",
+      "description": "ID da solicita\u00e7\u00e3o relacionada (PPCP ou Frete)"
+    },
+    "tipo_solicitacao": {
+      "type": "string",
+      "enum": [
+        "PPCP",
+        "Frete"
+      ],
+      "description": "Tipo de solicita\u00e7\u00e3o"
+    },
+    "usuario_email": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio que enviou a mensagem"
+    },
+    "usuario_nome": {
+      "type": "string",
+      "description": "Nome do usu\u00e1rio"
+    },
+    "mensagem": {
+      "type": "string",
+      "description": "Conte\u00fado da mensagem"
+    },
+    "data_hora": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data e hora da mensagem"
+    },
+    "empresa_id": {
+      "type": "string",
+      "description": "ID da empresa (multi-tenant)"
+    }
+  },
+  "required": [
+    "solicitacao_id",
+    "tipo_solicitacao",
+    "usuario_email",
+    "mensagem",
+    "data_hora"
+  ]
+}

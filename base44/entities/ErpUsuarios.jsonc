@@ -1,0 +1,72 @@
+{
+  "name": "ErpUsuarios",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome completo do usu\u00e1rio"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio (chave \u00fanica de identifica\u00e7\u00e3o)"
+    },
+    "perfil": {
+      "type": "string",
+      "enum": [
+        "Administrador",
+        "Usu\u00e1rio"
+      ],
+      "description": "Perfil global do usu\u00e1rio no ERP. Administrador tem acesso total; Usu\u00e1rio acessa apenas m\u00f3dulos autorizados."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pendente",
+        "Ativo",
+        "Inativo"
+      ],
+      "default": "Pendente",
+      "description": "Status do usu\u00e1rio"
+    },
+    "modulo_origem": {
+      "type": "string",
+      "description": "M\u00f3dulo onde o usu\u00e1rio foi originalmente cadastrado"
+    },
+    "modulos_autorizados": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Administra\u00e7\u00e3o",
+          "Comercial",
+          "Financeiro",
+          "Compras",
+          "Estoque MP",
+          "Estoque PA",
+          "PPCP",
+          "Log\u00edstica"
+        ]
+      },
+      "description": "Lista de m\u00f3dulos aos quais o usu\u00e1rio tem acesso autorizado (usado apenas para perfil Usu\u00e1rio)"
+    },
+    "cadastros_autorizados": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Lista de cadastros (submenus) aos quais o usu\u00e1rio tem acesso autorizado. Exemplo: Clientes, Produtos, Fornecedores"
+    },
+    "sistema_autorizado": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Lista de menus do sistema aos quais o usu\u00e1rio tem acesso autorizado. Exemplo: Usu\u00e1rios, M\u00f3dulos, Configura\u00e7\u00f5es"
+    }
+  },
+  "required": [
+    "nome",
+    "email",
+    "perfil"
+  ]
+}

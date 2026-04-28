@@ -1,0 +1,66 @@
+{
+  "name": "ContasReceber",
+  "type": "object",
+  "properties": {
+    "empresa_id": {
+      "type": "string",
+      "description": "UUID da empresa (FK \u2192 empresas.id)"
+    },
+    "numero_documento": {
+      "type": "string"
+    },
+    "cliente_id": {
+      "type": "string",
+      "description": "UUID do cliente (FK \u2192 clientes.id) \u2014 substitui cliente_nome"
+    },
+    "pedido_id": {
+      "type": "string",
+      "description": "UUID do pedido de origem (FK \u2192 pedidos.id)"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "valor": {
+      "type": "number",
+      "description": "Valor total da cobran\u00e7a"
+    },
+    "data_emissao": {
+      "type": "string",
+      "format": "date"
+    },
+    "data_vencimento": {
+      "type": "string",
+      "format": "date"
+    },
+    "data_pagamento": {
+      "type": "string",
+      "format": "date"
+    },
+    "valor_pago": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Aberto",
+        "Pago",
+        "Vencido",
+        "Cancelado",
+        "Negociado"
+      ],
+      "default": "Aberto"
+    },
+    "forma_pagamento": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "empresa_id",
+    "cliente_id",
+    "valor",
+    "data_vencimento"
+  ]
+}

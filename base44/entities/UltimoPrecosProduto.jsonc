@@ -1,0 +1,36 @@
+{
+  "name": "UltimoPrecosProduto",
+  "type": "object",
+  "properties": {
+    "codigo_unico": {
+      "type": "string",
+      "description": "C\u00f3digo \u00fanico do v\u00ednculo (config_vinculos)"
+    },
+    "empresa_id": {
+      "type": "string",
+      "description": "UUID da empresa (multi-tenant)"
+    },
+    "ultimo_preco": {
+      "type": "number",
+      "description": "\u00daltimo pre\u00e7o unit\u00e1rio registrado (R$/KG)"
+    },
+    "data_ultima_nf": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data de emiss\u00e3o da NF mais recente que originou este pre\u00e7o"
+    },
+    "fornecedor_nome": {
+      "type": "string",
+      "description": "Nome do fornecedor da \u00faltima NF"
+    },
+    "numero_nf": {
+      "type": "string",
+      "description": "N\u00famero da nota fiscal mais recente"
+    }
+  },
+  "required": [
+    "codigo_unico",
+    "empresa_id",
+    "ultimo_preco"
+  ]
+}

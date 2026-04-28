@@ -1,0 +1,65 @@
+{
+  "name": "JobsQueue",
+  "type": "object",
+  "properties": {
+    "tipo_job": {
+      "type": "string",
+      "enum": [
+        "enviar_email",
+        "sincronizar_app",
+        "gerar_relatorio",
+        "enviar_notificacao",
+        "processar_producao",
+        "outro"
+      ],
+      "description": "Tipo do job a ser executado"
+    },
+    "payload": {
+      "type": "string",
+      "description": "Dados necess\u00e1rios para execu\u00e7\u00e3o do job em formato JSON"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pendente",
+        "Processando",
+        "Conclu\u00eddo",
+        "Erro"
+      ],
+      "default": "Pendente",
+      "description": "Status atual do job"
+    },
+    "tentativas": {
+      "type": "number",
+      "default": 0,
+      "description": "N\u00famero de tentativas de execu\u00e7\u00e3o"
+    },
+    "max_tentativas": {
+      "type": "number",
+      "default": 3,
+      "description": "N\u00famero m\u00e1ximo de tentativas antes de marcar como Erro"
+    },
+    "erro_mensagem": {
+      "type": "string",
+      "description": "Mensagem de erro caso o job falhe"
+    },
+    "data_execucao": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data/hora em que o job come\u00e7ou a ser processado"
+    },
+    "data_finalizacao": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data/hora em que o job foi finalizado"
+    },
+    "modulo_origem": {
+      "type": "string",
+      "description": "M\u00f3dulo do ERP que criou o job"
+    }
+  },
+  "required": [
+    "tipo_job",
+    "payload"
+  ]
+}

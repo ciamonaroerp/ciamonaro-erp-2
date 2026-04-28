@@ -1,0 +1,44 @@
+{
+  "name": "PedidosItens",
+  "type": "object",
+  "properties": {
+    "empresa_id": {
+      "type": "string",
+      "description": "UUID da empresa (FK \u2192 empresas.id)"
+    },
+    "pedido_id": {
+      "type": "string",
+      "description": "UUID do pedido (FK \u2192 pedidos.id) \u2014 chave de relacionamento"
+    },
+    "produto_id": {
+      "type": "string",
+      "description": "UUID do produto (FK \u2192 produtos.id) \u2014 substitui campo texto produto"
+    },
+    "sequencia": {
+      "type": "number",
+      "description": "Ordem do item no pedido"
+    },
+    "quantidade": {
+      "type": "number",
+      "description": "Quantidade do produto"
+    },
+    "preco_unitario": {
+      "type": "number",
+      "description": "Pre\u00e7o unit\u00e1rio no momento do pedido"
+    },
+    "valor_desconto": {
+      "type": "number",
+      "default": 0
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "empresa_id",
+    "pedido_id",
+    "produto_id",
+    "quantidade",
+    "preco_unitario"
+  ]
+}

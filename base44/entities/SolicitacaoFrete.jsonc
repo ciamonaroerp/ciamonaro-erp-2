@@ -1,0 +1,77 @@
+{
+  "name": "SolicitacaoFrete",
+  "type": "object",
+  "properties": {
+    "numero_solicitacao": {
+      "type": "string",
+      "description": "N\u00famero \u00fanico da solicita\u00e7\u00e3o"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Enviado \u00e0 log\u00edstica",
+        "Em an\u00e1lise",
+        "Ajustes",
+        "Conclu\u00eddo"
+      ],
+      "default": "Enviado \u00e0 log\u00edstica",
+      "description": "Status da solicita\u00e7\u00e3o"
+    },
+    "vendedor_email": {
+      "type": "string",
+      "description": "Email do vendedor que criou a solicita\u00e7\u00e3o"
+    },
+    "cliente_nome": {
+      "type": "string",
+      "description": "Nome do cliente"
+    },
+    "cep_destino": {
+      "type": "string",
+      "description": "CEP de destino"
+    },
+    "data_entrega": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de entrega desejada"
+    },
+    "quantidade_camisetas": {
+      "type": "number",
+      "description": "Quantidade de camisetas"
+    },
+    "valor_mercadoria": {
+      "type": "number",
+      "description": "Valor total da mercadoria"
+    },
+    "observacoes_vendedor": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es do vendedor"
+    },
+    "tempo_resposta_logistica": {
+      "type": "number",
+      "description": "Tempo em horas desde cria\u00e7\u00e3o sem resposta"
+    },
+    "alerta_sla": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "alerta",
+        "cr\u00edtico"
+      ],
+      "default": "normal",
+      "description": "Status do alerta SLA"
+    },
+    "empresa_id": {
+      "type": "string",
+      "description": "ID da empresa (multi-tenant)"
+    }
+  },
+  "required": [
+    "numero_solicitacao",
+    "vendedor_email",
+    "cliente_nome",
+    "cep_destino",
+    "data_entrega",
+    "quantidade_camisetas",
+    "valor_mercadoria"
+  ]
+}

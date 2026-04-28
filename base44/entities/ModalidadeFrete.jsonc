@@ -1,0 +1,29 @@
+{
+  "name": "ModalidadeFrete",
+  "type": "object",
+  "properties": {
+    "empresa_id": {
+      "type": "string",
+      "description": "UUID da empresa (FK \u2192 empresas.id)"
+    },
+    "nome_modalidade": {
+      "type": "string",
+      "description": "Nome da modalidade (ex: CIF, FOB, Retirada)"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativo",
+        "Inativo"
+      ],
+      "default": "Ativo"
+    }
+  },
+  "required": [
+    "empresa_id",
+    "nome_modalidade"
+  ]
+}

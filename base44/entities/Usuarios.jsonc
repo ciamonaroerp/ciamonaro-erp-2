@@ -1,0 +1,49 @@
+{
+  "name": "Usuarios",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome completo do usu\u00e1rio"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio"
+    },
+    "senha": {
+      "type": "string",
+      "description": "Senha do usu\u00e1rio"
+    },
+    "perfil": {
+      "type": "string",
+      "enum": [
+        "Administrador",
+        "Comercial",
+        "PPCP",
+        "Log\u00edstica",
+        "Financeiro",
+        "Compras",
+        "Estoque"
+      ],
+      "description": "Perfil de acesso do usu\u00e1rio"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativo",
+        "Inativo"
+      ],
+      "default": "Ativo",
+      "description": "Status do usu\u00e1rio"
+    },
+    "modulo_origem": {
+      "type": "string",
+      "description": "M\u00f3dulo de origem do usu\u00e1rio"
+    }
+  },
+  "required": [
+    "nome",
+    "email",
+    "perfil"
+  ]
+}

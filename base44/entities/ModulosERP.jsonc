@@ -1,0 +1,23 @@
+{
+  "name": "ModulosERP",
+  "type": "object",
+  "properties": {
+    "nome_modulo": {
+      "type": "string",
+      "description": "Nome do m\u00f3dulo do ERP"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativo",
+        "Preparado",
+        "Inativo"
+      ],
+      "default": "Preparado",
+      "description": "Status do m\u00f3dulo"
+    }
+  },
+  "required": [
+    "nome_modulo"
+  ]
+}

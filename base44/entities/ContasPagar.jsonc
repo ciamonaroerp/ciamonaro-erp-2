@@ -1,0 +1,62 @@
+{
+  "name": "ContasPagar",
+  "type": "object",
+  "properties": {
+    "empresa_id": {
+      "type": "string",
+      "description": "UUID da empresa (FK \u2192 empresas.id)"
+    },
+    "numero_documento": {
+      "type": "string"
+    },
+    "fornecedor_id": {
+      "type": "string",
+      "description": "UUID do fornecedor (FK \u2192 fornecedores.id) \u2014 substitui fornecedor_nome"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "valor": {
+      "type": "number",
+      "description": "Valor total a pagar"
+    },
+    "data_emissao": {
+      "type": "string",
+      "format": "date"
+    },
+    "data_vencimento": {
+      "type": "string",
+      "format": "date"
+    },
+    "data_pagamento": {
+      "type": "string",
+      "format": "date"
+    },
+    "valor_pago": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Aberto",
+        "Pago",
+        "Vencido",
+        "Cancelado",
+        "Negociado"
+      ],
+      "default": "Aberto"
+    },
+    "forma_pagamento": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "empresa_id",
+    "fornecedor_id",
+    "valor",
+    "data_vencimento"
+  ]
+}

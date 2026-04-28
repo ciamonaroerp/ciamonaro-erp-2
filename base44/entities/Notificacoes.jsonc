@@ -1,0 +1,60 @@
+{
+  "name": "Notificacoes",
+  "type": "object",
+  "properties": {
+    "usuario_id": {
+      "type": "string",
+      "description": "ID do usu\u00e1rio ErpUsuarios destinat\u00e1rio"
+    },
+    "usuario_email": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio destinat\u00e1rio"
+    },
+    "titulo": {
+      "type": "string",
+      "description": "T\u00edtulo da notifica\u00e7\u00e3o"
+    },
+    "mensagem": {
+      "type": "string",
+      "description": "Conte\u00fado da notifica\u00e7\u00e3o"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "Informa\u00e7\u00e3o",
+        "Aviso",
+        "Urgente",
+        "Erro"
+      ],
+      "default": "Informa\u00e7\u00e3o",
+      "description": "Tipo/severidade da notifica\u00e7\u00e3o"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "N\u00e3o lida",
+        "Lida"
+      ],
+      "default": "N\u00e3o lida",
+      "description": "Status de leitura"
+    },
+    "modulo_origem": {
+      "type": "string",
+      "description": "M\u00f3dulo do ERP que gerou a notifica\u00e7\u00e3o"
+    },
+    "link_acao": {
+      "type": "string",
+      "description": "URL ou rota opcional para a\u00e7\u00e3o relacionada"
+    },
+    "data_leitura": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data e hora em que a notifica\u00e7\u00e3o foi lida"
+    }
+  },
+  "required": [
+    "usuario_email",
+    "titulo",
+    "mensagem"
+  ]
+}

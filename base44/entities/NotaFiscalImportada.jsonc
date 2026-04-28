@@ -1,0 +1,69 @@
+{
+  "name": "NotaFiscalImportada",
+  "type": "object",
+  "properties": {
+    "empresa_id": {
+      "type": "string"
+    },
+    "chave_nfe": {
+      "type": "string"
+    },
+    "numero_nf": {
+      "type": "string"
+    },
+    "serie": {
+      "type": "string"
+    },
+    "data_emissao": {
+      "type": "string"
+    },
+    "data_entrada_saida": {
+      "type": "string"
+    },
+    "valor_total_nf": {
+      "type": "number"
+    },
+    "emitente_cnpj": {
+      "type": "string"
+    },
+    "emitente_nome": {
+      "type": "string"
+    },
+    "emitente_endereco": {
+      "type": "string"
+    },
+    "destinatario_documento": {
+      "type": "string"
+    },
+    "destinatario_nome": {
+      "type": "string"
+    },
+    "destinatario_endereco": {
+      "type": "string"
+    },
+    "itens": {
+      "type": "string",
+      "description": "JSON serializado dos itens da nota"
+    },
+    "duplicatas": {
+      "type": "string",
+      "description": "JSON serializado das duplicatas/parcelas"
+    },
+    "impostos": {
+      "type": "string",
+      "description": "JSON serializado dos impostos"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Importada",
+        "Cancelada"
+      ],
+      "default": "Importada"
+    }
+  },
+  "required": [
+    "empresa_id",
+    "chave_nfe"
+  ]
+}

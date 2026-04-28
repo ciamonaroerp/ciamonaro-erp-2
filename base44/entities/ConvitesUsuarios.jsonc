@@ -1,0 +1,43 @@
+{
+  "name": "ConvitesUsuarios",
+  "type": "object",
+  "properties": {
+    "usuario_id": {
+      "type": "string",
+      "description": "ID do usu\u00e1rio ErpUsuarios"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio convidado"
+    },
+    "token": {
+      "type": "string",
+      "description": "Token \u00fanico para ativa\u00e7\u00e3o"
+    },
+    "data_criacao": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data e hora de cria\u00e7\u00e3o do convite"
+    },
+    "data_expiracao": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data de expira\u00e7\u00e3o do convite (48h ap\u00f3s cria\u00e7\u00e3o)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pendente",
+        "Utilizado",
+        "Expirado"
+      ],
+      "default": "Pendente",
+      "description": "Status do convite"
+    }
+  },
+  "required": [
+    "email",
+    "token",
+    "data_expiracao"
+  ]
+}

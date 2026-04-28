@@ -1,0 +1,42 @@
+{
+  "name": "IntegracoesERP",
+  "type": "object",
+  "properties": {
+    "nome_app": {
+      "type": "string",
+      "description": "Nome do aplicativo integrado"
+    },
+    "descricao": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o do aplicativo e sua fun\u00e7\u00e3o"
+    },
+    "webhook_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL do webhook para enviar dados"
+    },
+    "secret_token": {
+      "type": "string",
+      "description": "Token secreto para autentica\u00e7\u00e3o"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativo",
+        "Inativo"
+      ],
+      "default": "Ativo",
+      "description": "Status da integra\u00e7\u00e3o"
+    },
+    "ultima_sincronizacao": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data e hora da \u00faltima sincroniza\u00e7\u00e3o bem-sucedida"
+    }
+  },
+  "required": [
+    "nome_app",
+    "webhook_url",
+    "secret_token"
+  ]
+}

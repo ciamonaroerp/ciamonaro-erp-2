@@ -1,0 +1,57 @@
+{
+  "name": "MateriaPrimaImportada",
+  "type": "object",
+  "properties": {
+    "empresa_id": {
+      "type": "string",
+      "description": "UUID da empresa"
+    },
+    "chave_nfe": {
+      "type": "string",
+      "description": "Chave de acesso da NF-e (44 d\u00edgitos)"
+    },
+    "numero_nf": {
+      "type": "string",
+      "description": "N\u00famero da nota fiscal"
+    },
+    "fornecedor_cnpj": {
+      "type": "string"
+    },
+    "fornecedor_nome": {
+      "type": "string"
+    },
+    "codigo_produto": {
+      "type": "string",
+      "description": "C\u00f3digo do produto na nota"
+    },
+    "descricao_produto": {
+      "type": "string"
+    },
+    "unidade": {
+      "type": "string"
+    },
+    "quantidade": {
+      "type": "number"
+    },
+    "valor_unitario": {
+      "type": "number"
+    },
+    "valor_total": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativo",
+        "Inativo"
+      ],
+      "default": "Ativo"
+    }
+  },
+  "required": [
+    "empresa_id",
+    "chave_nfe",
+    "codigo_produto",
+    "descricao_produto"
+  ]
+}

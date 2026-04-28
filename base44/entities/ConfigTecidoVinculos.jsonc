@@ -1,0 +1,49 @@
+{
+  "name": "ConfigTecidoVinculos",
+  "type": "object",
+  "properties": {
+    "empresa_id": {
+      "type": "string",
+      "description": "ID da empresa"
+    },
+    "artigo_id": {
+      "type": "string",
+      "description": "ID do artigo"
+    },
+    "cor_tecido_id": {
+      "type": "string",
+      "description": "ID da cor do tecido"
+    },
+    "linha_comercial_id": {
+      "type": "string",
+      "description": "ID da linha comercial"
+    },
+    "codigo_unico": {
+      "type": "string",
+      "description": "C\u00f3digo \u00fanico gerado para o v\u00ednculo"
+    },
+    "descricao_base": {
+      "type": "string",
+      "description": "xProd do XML \u2014 descri\u00e7\u00e3o principal do item"
+    },
+    "descricao_complementar": {
+      "type": "string",
+      "description": "infAdProd do XML \u2014 descri\u00e7\u00e3o complementar"
+    },
+    "codigo_pedido": {
+      "type": "string",
+      "description": "xPed do XML \u2014 c\u00f3digo do pedido"
+    },
+    "fornecedor_id": {
+      "type": "string",
+      "description": "CNPJ do emitente/fornecedor para matching"
+    }
+  },
+  "required": [
+    "empresa_id",
+    "artigo_id",
+    "cor_tecido_id",
+    "linha_comercial_id",
+    "codigo_unico"
+  ]
+}

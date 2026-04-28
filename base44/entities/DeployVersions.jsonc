@@ -1,0 +1,63 @@
+{
+  "name": "DeployVersions",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "N\u00famero da vers\u00e3o (ex: v1.0.0)"
+    },
+    "environment": {
+      "type": "string",
+      "enum": [
+        "development",
+        "staging",
+        "production"
+      ],
+      "default": "development",
+      "description": "Ambiente alvo do deploy"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "approved",
+        "deployed",
+        "rollback",
+        "failed"
+      ],
+      "default": "draft",
+      "description": "Status da vers\u00e3o"
+    },
+    "date_deployed": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data e hora em que o deploy foi realizado"
+    },
+    "deployed_by": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio que realizou o deploy"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es sobre a vers\u00e3o ou deploy"
+    },
+    "build_log": {
+      "type": "string",
+      "description": "Log de execu\u00e7\u00e3o do deploy"
+    },
+    "target_path": {
+      "type": "string",
+      "description": "Caminho no servidor de destino",
+      "default": "/public_html/erp"
+    },
+    "target_url": {
+      "type": "string",
+      "description": "URL p\u00fablica ap\u00f3s deploy",
+      "default": "https://erp.ciamonaro.com.br"
+    }
+  },
+  "required": [
+    "version",
+    "environment"
+  ]
+}

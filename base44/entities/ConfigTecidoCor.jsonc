@@ -1,0 +1,27 @@
+{
+  "name": "ConfigTecidoCor",
+  "type": "object",
+  "properties": {
+    "empresa_id": {
+      "type": "string",
+      "description": "ID da empresa"
+    },
+    "codigo_cor": {
+      "type": "string",
+      "description": "C\u00f3digo num\u00e9rico \u00fanico de 4 d\u00edgitos para a cor"
+    },
+    "nome_cor": {
+      "type": "string",
+      "description": "Nome da cor do tecido"
+    },
+    "descricao": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o opcional da cor"
+    }
+  },
+  "required": [
+    "empresa_id",
+    "codigo_cor",
+    "nome_cor"
+  ]
+}

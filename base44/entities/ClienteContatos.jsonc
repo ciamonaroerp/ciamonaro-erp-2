@@ -1,0 +1,39 @@
+{
+  "name": "ClienteContatos",
+  "type": "object",
+  "properties": {
+    "cliente_id": {
+      "type": "string",
+      "description": "UUID do cliente (FK -> clientes.id)"
+    },
+    "empresa_id": {
+      "type": "string",
+      "description": "UUID da empresa (FK -> empresas.id)"
+    },
+    "nome": {
+      "type": "string",
+      "description": "Nome do contato"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email do contato"
+    },
+    "telefone": {
+      "type": "string",
+      "description": "Telefone do contato"
+    },
+    "departamento": {
+      "type": "string",
+      "description": "Departamento do contato"
+    },
+    "cargo": {
+      "type": "string",
+      "description": "Cargo do contato"
+    }
+  },
+  "required": [
+    "cliente_id",
+    "empresa_id",
+    "nome"
+  ]
+}

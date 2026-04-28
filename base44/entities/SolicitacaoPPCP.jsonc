@@ -1,0 +1,125 @@
+{
+  "name": "SolicitacaoPPCP",
+  "type": "object",
+  "properties": {
+    "numero_solicitacao": {
+      "type": "string",
+      "description": "N\u00famero \u00fanico da solicita\u00e7\u00e3o"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Enviado ao PPCP",
+        "Em an\u00e1lise",
+        "Ajustes",
+        "Aprovado",
+        "Reprovado"
+      ],
+      "default": "Enviado ao PPCP",
+      "description": "Status da solicita\u00e7\u00e3o"
+    },
+    "vendedor_email": {
+      "type": "string",
+      "description": "Email do vendedor que criou a solicita\u00e7\u00e3o"
+    },
+    "cliente_nome": {
+      "type": "string",
+      "description": "Nome do cliente final"
+    },
+    "artigo": {
+      "type": "string",
+      "description": "Tipo de tecido/artigo"
+    },
+    "cor": {
+      "type": "string",
+      "description": "Cor do artigo"
+    },
+    "modelo": {
+      "type": "string",
+      "description": "Modelo da confec\u00e7\u00e3o"
+    },
+    "quantidade": {
+      "type": "number",
+      "description": "Quantidade solicitada"
+    },
+    "tipo_personalizacao": {
+      "type": "string",
+      "enum": [
+        "Silkscreen",
+        "DTF",
+        "Sublima\u00e7\u00e3o",
+        "Laser",
+        "Personaliza\u00e7\u00e3o na manga",
+        "Nenhuma"
+      ],
+      "description": "Tipo de personaliza\u00e7\u00e3o"
+    },
+    "mangas_personalizadas": {
+      "type": "string",
+      "enum": [
+        "uma",
+        "duas"
+      ],
+      "description": "Quantidade de mangas personalizadas (se aplic\u00e1vel)"
+    },
+    "num_cores_silkscreen": {
+      "type": "number",
+      "description": "N\u00famero de cores para Silkscreen"
+    },
+    "num_posicoes_silkscreen": {
+      "type": "number",
+      "description": "N\u00famero de posi\u00e7\u00f5es para Silkscreen"
+    },
+    "data_entrega_cliente": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de entrega final ao cliente"
+    },
+    "observacoes_vendedor": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es do vendedor (primeira mensagem do chat)"
+    },
+    "validade_aprovacao": {
+      "type": "string",
+      "enum": [
+        "12h",
+        "24h",
+        "36h",
+        "48h"
+      ],
+      "description": "Validade da aprova\u00e7\u00e3o"
+    },
+    "data_aprovacao": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data/hora da aprova\u00e7\u00e3o"
+    },
+    "tempo_resposta_ppcp": {
+      "type": "number",
+      "description": "Tempo em horas desde cria\u00e7\u00e3o sem resposta PPCP"
+    },
+    "alerta_sla": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "alerta",
+        "cr\u00edtico"
+      ],
+      "default": "normal",
+      "description": "Status do alerta SLA"
+    },
+    "empresa_id": {
+      "type": "string",
+      "description": "ID da empresa (multi-tenant)"
+    }
+  },
+  "required": [
+    "numero_solicitacao",
+    "vendedor_email",
+    "artigo",
+    "cor",
+    "modelo",
+    "quantidade",
+    "data_entrega_cliente"
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "name": "ProdutoComercialArtigo",
+  "type": "object",
+  "properties": {
+    "empresa_id": {
+      "type": "string",
+      "description": "UUID da empresa"
+    },
+    "produto_id": {
+      "type": "string",
+      "description": "ID do ProdutoComercial"
+    },
+    "vinculo_id": {
+      "type": "string",
+      "description": "ID do V\u00ednculo de Configura\u00e7\u00e3o (ConfigVinculos)"
+    },
+    "codigo_unico": {
+      "type": "string",
+      "description": "C\u00f3digo \u00fanico do v\u00ednculo"
+    },
+    "artigo_nome": {
+      "type": "string",
+      "description": "Nome comercial do artigo"
+    },
+    "cor_nome": {
+      "type": "string",
+      "description": "Nome comercial da cor"
+    },
+    "linha_nome": {
+      "type": "string",
+      "description": "Nome da linha comercial"
+    }
+  },
+  "required": [
+    "empresa_id",
+    "produto_id",
+    "vinculo_id",
+    "codigo_unico"
+  ]
+}
