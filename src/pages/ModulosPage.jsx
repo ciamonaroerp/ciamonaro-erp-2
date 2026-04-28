@@ -21,15 +21,16 @@ export default function ModulosPage() {
   const [salvandoOrdem, setSalvandoOrdem] = useState(false);
   const [ordemAlterada, setOrdemAlterada] = useState(false);
 
-  // Busca módulos já enriquecidos com ordem_modulo de modulo_paginas
+  // Busca todos os módulos sem filtro para debugar
   const { data: modulos = [], isLoading } = useQuery({
-    queryKey: ["modulos-erp-ordenados", empresa_id],
+    queryKey: ["modulos-erp-ordenados"],
     queryFn: async () => {
-      if (!supabase || !empresa_id) return [];
-      const { data } = await supabase.from("modulos_erp").select("*").eq("empresa_id", empresa_id).order("ordem_modulo", { ascending: true });
+      if (!supabase) return [];
+      const { data, error } = await supabase.from("modulos_erp").select("*").order("ordem_modulo", { ascending: true });
+      if (error) console.error('[ModulosPage] Query error:', error);
       return data || [];
     },
-    enabled: !!empresa_id && !empresaLoading,
+    enabled: !!supabase,
   });
 
   // Busca o menu completo para exibir páginas vinculadas por módulo
