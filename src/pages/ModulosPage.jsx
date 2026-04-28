@@ -7,7 +7,8 @@ import { format } from "date-fns";
 import ModuloModal from "@/components/modulos/ModuloModal";
 import { supabase } from "@/components/lib/supabaseClient";
 import { useGlobalAlert } from "@/components/GlobalAlertDialog";
-import { Loader2, Pencil, Trash2, Plus } from "lucide-react";
+import { GripVertical, Loader2, Pencil, Trash2, Plus, ChevronUp, ChevronDown } from "lucide-react";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Button } from "@/components/ui/button";
 
 
@@ -25,7 +26,7 @@ export default function ModulosPage() {
     queryFn: async () => {
       if (!supabase) return [];
       try {
-        const { data, error } = await supabase.from("modulos_erp").select("id,nome_modulo,status,created_at,empresa_id");
+        const { data, error } = await supabase.from("modulos_erp").select("id,nome_modulo,status,created_at,empresa_id,ordem_modulo").order("ordem_modulo", { ascending: true });
         if (error) {
           console.error('[ModulosPage] Query error:', error);
           return [];
@@ -38,6 +39,76 @@ export default function ModulosPage() {
     },
     enabled: !!supabase,
   });
+
+  const [ordemLocal, setOrdemLocal] = useState([]);
+  const [salvandoOrdem, setSalvandoOrdem] = useState(false);
+
+  useEffect(() => {
+    if (modulos) setOrdemLocal(modulos);
+  }, [modulos]);
+
+  const handleDragEnd = async (result) => {
+    const { source, destination } = result;
+    if (!destination || source.index === destination.index) return;
+
+    const novaOrdem = Array.from(ordemLocal);
+    const [movido] = novaOrdem.splice(source.index, 1);
+    novaOrdem.splice(destination.index, 0, movido);
+    setOrdemLocal(novaOrdem);
+
+    setSalvandoOrdem(true);
+    try {
+      const updates = novaOrdem.map((m, idx) => ({
+        id: m.id,
+        ordem_modulo: idx + 1,
+      }));
+
+      for (const upd of updates) {
+        await supabase
+          .from("modulos_erp")
+          .update({ ordem_modulo: upd.ordem_modulo })
+          .eq("id", upd.id);
+      }
+
+      qc.invalidateQueries({ queryKey: ["modulos-erp"] });
+    } catch (err) {
+      console.error("Erro ao salvar ordem:", err);
+      setOrdemLocal(modulos || []);
+    } finally {
+      setSalvandoOrdem(false);
+    }
+  };
+
+  const moverItem = async (idx, direcao) => {
+    const novoIdx = idx + direcao;
+    if (novoIdx < 0 || novoIdx >= ordemLocal.length) return;
+
+    const novaOrdem = Array.from(ordemLocal);
+    [novaOrdem[idx], novaOrdem[novoIdx]] = [novaOrdem[novoIdx], novaOrdem[idx]];
+    setOrdemLocal(novaOrdem);
+
+    setSalvandoOrdem(true);
+    try {
+      const updates = novaOrdem.map((m, i) => ({
+        id: m.id,
+        ordem_modulo: i + 1,
+      }));
+
+      for (const upd of updates) {
+        await supabase
+          .from("modulos_erp")
+          .update({ ordem_modulo: upd.ordem_modulo })
+          .eq("id", upd.id);
+      }
+
+      qc.invalidateQueries({ queryKey: ["modulos-erp"] });
+    } catch (err) {
+      console.error("Erro ao salvar ordem:", err);
+      setOrdemLocal(modulos || []);
+    } finally {
+      setSalvandoOrdem(false);
+    }
+  };
 
   // Busca o menu completo para exibir páginas vinculadas por módulo
   const { data: menuCompleto = {} } = useQuery({
@@ -141,7 +212,9 @@ export default function ModulosPage() {
 
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
         {/* Cabeçalho da tabela */}
-        <div className="grid grid-cols-[1fr_1fr_120px_140px_100px] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <div className="grid grid-cols-[40px_48px_1fr_1fr_120px_140px_100px] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <span></span>
+          <span className="text-center">Ordem</span>
           <span>Nome do Módulo</span>
           <span>Páginas do Menu</span>
           <span className="text-center">Status</span>
@@ -154,7 +227,7 @@ export default function ModulosPage() {
             <Loader2 className="h-5 w-5 animate-spin mr-2" />
             Carregando módulos...
           </div>
-        ) : modulos.length === 0 ? (
+        ) : ordemLocal.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-2">
             <p className="text-sm">Nenhum módulo cadastrado.</p>
             <Button variant="outline" size="sm" onClick={() => { setEditingRow(null); setModalOpen(true); }}>
@@ -162,70 +235,111 @@ export default function ModulosPage() {
             </Button>
           </div>
         ) : (
-          <div>
-            {modulos.map((m) => (
-              <div
-                key={m.id}
-                className="grid grid-cols-[1fr_1fr_120px_140px_100px] gap-3 px-4 py-3 items-center border-b border-slate-100 hover:bg-slate-50 transition-colors"
-              >
-                {/* Nome */}
-                <span className="text-sm font-medium text-slate-800 truncate">{m.nome_modulo}</span>
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="modulos-lista">
+              {(provided) => (
+                <div {...provided.droppableProps} ref={provided.innerRef}>
+                  {ordemLocal.map((m, idx) => (
+                    <Draggable key={m.id} draggableId={m.id} index={idx}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          className={`grid grid-cols-[40px_48px_1fr_1fr_120px_140px_100px] gap-3 px-4 py-3 items-center border-b border-slate-100 transition-colors ${
+                            snapshot.isDragging ? "bg-blue-50 shadow-md" : "hover:bg-slate-50"
+                          }`}
+                        >
+                          {/* Drag handle */}
+                          <div {...provided.dragHandleProps} className="flex items-center justify-center cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500">
+                            <GripVertical className="h-4 w-4" />
+                          </div>
 
-                {/* Páginas do Menu */}
-                <div className="flex flex-wrap gap-1">
-                  {(menuCompleto[m.nome_modulo] || []).length === 0 ? (
-                    <span className="text-xs text-slate-400 italic">Nenhuma</span>
-                  ) : (
-                    (menuCompleto[m.nome_modulo] || []).map(p => (
-                      <span
-                        key={p.pagina_nome}
-                        className="text-xs bg-blue-50 border border-blue-200 text-blue-700 px-1.5 py-0.5 rounded-md"
-                        title={p.pagina_nome}
-                      >
-                        {p.label_menu || p.pagina_nome}
-                      </span>
-                    ))
-                  )}
+                          {/* Ordem + botões ↑↓ */}
+                          <div className="flex flex-col items-center gap-0.5">
+                            <button
+                              onClick={() => moverItem(idx, -1)}
+                              disabled={idx === 0 || salvandoOrdem}
+                              className="text-slate-300 hover:text-slate-600 disabled:opacity-20 disabled:cursor-not-allowed"
+                            >
+                              <ChevronUp className="h-3.5 w-3.5" />
+                            </button>
+                            <span className="text-xs font-mono text-slate-500 leading-none">{idx + 1}</span>
+                            <button
+                              onClick={() => moverItem(idx, 1)}
+                              disabled={idx === ordemLocal.length - 1 || salvandoOrdem}
+                              className="text-slate-300 hover:text-slate-600 disabled:opacity-20 disabled:cursor-not-allowed"
+                            >
+                              <ChevronDown className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+
+                          {/* Nome */}
+                          <span className="text-sm font-medium text-slate-800 truncate">{m.nome_modulo}</span>
+
+                          {/* Páginas do Menu */}
+                          <div className="flex flex-wrap gap-1">
+                            {(menuCompleto[m.nome_modulo] || []).length === 0 ? (
+                              <span className="text-xs text-slate-400 italic">Nenhuma</span>
+                            ) : (
+                              (menuCompleto[m.nome_modulo] || []).map(p => (
+                                <span
+                                  key={p.pagina_nome}
+                                  className="text-xs bg-blue-50 border border-blue-200 text-blue-700 px-1.5 py-0.5 rounded-md"
+                                  title={p.pagina_nome}
+                                >
+                                  {p.label_menu || p.pagina_nome}
+                                </span>
+                              ))
+                            )}
+                          </div>
+
+                          {/* Status badge */}
+                          <div className="flex justify-center">
+                            <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
+                              m.status === "Ativo"
+                                ? "bg-slate-50 border-slate-300 text-slate-600"
+                                : "bg-slate-50 border-slate-200 text-slate-400"
+                            }`}>
+                              {m.status ?? "—"}
+                            </span>
+                          </div>
+
+                          {/* Data criação */}
+                          <span className="text-xs text-slate-500">
+                            {m.created_at ? format(new Date(m.created_at), "dd/MM/yyyy") : "—"}
+                          </span>
+
+                          {/* Ações */}
+                          <div className="flex items-center justify-end gap-1">
+                            {salvandoOrdem && idx === 0 && (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400 mr-1" />
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-slate-400 hover:text-slate-700"
+                              onClick={() => { setEditingRow(m); setModalOpen(true); }}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-slate-400 hover:text-red-500"
+                              onClick={() => handleExcluir(m)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
                 </div>
-
-                {/* Status badge */}
-                <div className="flex justify-center">
-                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
-                    m.status === "Ativo"
-                      ? "bg-slate-50 border-slate-300 text-slate-600"
-                      : "bg-slate-50 border-slate-200 text-slate-400"
-                  }`}>
-                    {m.status ?? "—"}
-                  </span>
-                </div>
-
-                {/* Data criação */}
-                <span className="text-xs text-slate-500">
-                  {m.created_at ? format(new Date(m.created_at), "dd/MM/yyyy") : "—"}
-                </span>
-
-                {/* Ações */}
-                <div className="flex items-center justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-slate-400 hover:text-slate-700"
-                    onClick={() => { setEditingRow(m); setModalOpen(true); }}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-slate-400 hover:text-red-500"
-                    onClick={() => handleExcluir(m)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+              )}
+            </Droppable>
+          </DragDropContext>
         )}
       </div>
 
