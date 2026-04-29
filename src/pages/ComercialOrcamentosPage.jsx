@@ -81,7 +81,7 @@ export default function ComercialOrcamentosPage() {
     queryFn: async () => {
       if (!supabase || !empresa_id) return [];
       const { data, error } = await supabase
-        .from("orcamentos")
+        .from("com_orcamentos")
         .select("*")
         .eq("empresa_id", empresa_id)
         .is("deleted_at", null)
@@ -94,7 +94,7 @@ export default function ComercialOrcamentosPage() {
 
   const deletarOrcamento = async (id) => {
     if (!supabase) return;
-    const { error } = await supabase.from("orcamentos").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+    const { error } = await supabase.from("com_orcamentos").update({ deleted_at: new Date().toISOString() }).eq("id", id);
     if (error) {
       showError({ title: "Erro ao excluir", description: error.message });
       return;
@@ -148,7 +148,7 @@ export default function ComercialOrcamentosPage() {
   };
 
   const buscarDadosCompletos = async (orcamento) => {
-    const { data: itensData } = await supabase.from("orcamento_itens").select("*").eq("orcamento_id", orcamento.id).order("created_at");
+    const { data: itensData } = await supabase.from("com_orcamento_itens").select("*").eq("orcamento_id", orcamento.id).order("created_at");
     const itens = itensData || [];
     const extra = {
       desconto: parseFloat(orcamento.desconto_pagamento) || 0,
