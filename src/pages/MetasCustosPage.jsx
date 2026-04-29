@@ -222,15 +222,17 @@ function AbaCustosFixos({ empresa_id }) {
   const [form, setForm] = useState({ id: null, descricao: "", percentual: "", tipo: "direto", centro_custo_id: "" });
   const [centros, setCentros] = useState([]);
 
-  useEffect(() => {
-    supabase.from("centros_custo").select("*").eq("empresa_id", empresa_id).is("deleted_at", null)
-      .then(({ data }) => setCentros(data || []));
-  }, [empresa_id]);
-
   const carregar = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from("despesas_variaveis").select("*,centros_custo(descricao)").eq("empresa_id", empresa_id).is("deleted_at", null);
-    const dados = (data || []).map(r => ({ ...r, centro_custo_descricao: r.centros_custo?.descricao }));
+    const [{ data: centrosData }, { data, error }] = await Promise.all([
+      supabase.from("centros_custo").select("id,descricao").eq("empresa_id", empresa_id).is("deleted_at", null),
+      supabase.from("despesas_variaveis").select("*").eq("empresa_id", empresa_id).is("deleted_at", null)
+    ]);
+    const centrosList = centrosData || [];
+    setCentros(centrosList);
+    if (error) { console.error("Erro despesas_variaveis:", error.message); setLoading(false); return; }
+    const centrosMap = centrosList.reduce((acc, c) => { acc[c.id] = c.descricao; return acc; }, {});
+    const dados = (data || []).map(r => ({ ...r, centro_custo_descricao: centrosMap[r.centro_custo_id] || null }));
     setDados(dados);
     const totalDireto = dados.filter(r => r.tipo === 'direto').reduce((s, r) => s + (r.percentual || 0), 0);
     const totalIndireto = dados.filter(r => r.tipo === 'indireto').reduce((s, r) => s + (r.percentual || 0), 0);
