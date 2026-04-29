@@ -32,89 +32,46 @@ import { supabase } from "@/components/lib/supabaseClient";
 import { ErpHeader } from "@/components/design-system";
 import SystemVersion from "@/components/system/SystemVersion";
 
-const MODULO_PAGE_MAP = {
-  "Comercial": "ComercialPage",
-  "PPCP": "PpcpPage",
-  "Logística": "LogisticaPage",
-  "Financeiro": "FinanceiroPage",
-  "Compras": "ComprasPage",
-  "Estoque MP": "EstoqueMpPage",
-  "Estoque PA": "EstoquePaPage",
-  "Produção": "ProducaoPage",
-  "Qualidade": "QualidadePage",
-  "Embalagem": "EmbalagemPage",
+
+// Seções fixas que não são módulos configuráveis
+const SECTION_PRINCIPAL = {
+  label: "Principal",
+  items: [
+    { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
+    { name: "Deploy Manager", page: "DeployManager", icon: Rocket },
+  ],
 };
 
-const STATIC_SECTIONS = [
-  {
-    label: "Principal",
-    items: [
-      { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
-      { name: "Deploy Manager", page: "DeployManager", icon: Rocket },
-    ],
-  },
-  {
-    label: "ERP",
-    items: [
-      { name: "Módulos do ERP", page: "ModulosPage", icon: Boxes },
-      { name: "Fiscal", page: "FiscalPage", icon: ScrollText },
-      { name: "Histórico de Preços", page: "HistoricoPrecosPage", icon: BarChart3 },
-    ],
-  },
-  {
-    label: "Financeiro",
-    items: [
-      { name: "Configurações gerais", page: "FinanceiroConfiguracoesPage", icon: Settings, submenu: false },
-      { name: "Calculadora de Financiamento", page: "FinanceiroCalculadoraFinanciamento", icon: Calculator, submenu: false },
-      { name: "Metas e Custos Operacionais", page: "MetasCustosPage", icon: BarChart3, submenu: false },
-    ],
-  },
-  {
-    label: "Comercial",
-    items: [
-      { name: "Orçamentos", page: "ComercialOrcamentosPage", icon: ScrollText, submenu: false },
-      { name: "CRM", page: "CRMPage", icon: Users, submenu: false },
-      { name: "Tarefas CRM", page: "CRMTarefasPage", icon: Clock, submenu: false },
-      { name: "Dashboard CRM", page: "CRMDashboardPage", icon: LayoutDashboard, submenu: false },
-    ],
-  },
-  {
-    label: "Estoque",
-    items: [
-      { name: "Controle", page: "EstoqueControlePage", icon: Package, submenu: false },
-    ],
-  },
-  {
-    label: "Cadastros",
-    items: [
-      { name: "Usuários", page: "Usuarios", icon: Users },
-      { name: "Informações", page: "InformacoesPage", icon: ScrollText },
-      { name: "Clientes", page: "ClientesPage", icon: Building2 },
-      { name: "Transportadoras", page: "Transportadoras", icon: Building2 },
-      { name: "Modalidade de Frete", page: "ModalidadeFrete", icon: Package },
-      { name: "Fornecedores", page: "FornecedoresPage", icon: Building2 },
-    ],
-  },
-  {
-    label: "Engenharia de Produto",
-    items: [
-      { name: "Configuração do Tecido", page: "ConfiguracaoTecidoPage", icon: Package },
-      { name: "Produto", page: "ProdutoComercialPage", icon: Package },
-      { name: "Custo do Produto", page: "CustoProdutoPage", icon: Package },
-      { name: "Serviços", page: "ServicosPage", icon: Package },
-      { name: "Configuração Extras", page: "ConfiguracaoExtrasPage", icon: Package },
-    ],
-  },
-  {
-    label: "Sistema",
-    items: [
-      { name: "Configurações da Empresa", page: "EmpresasConfigPage", icon: Settings, submenu: true },
-      { name: "Integrações", page: "IntegracoesERP", icon: Zap },
-      { name: "Logs de Auditoria", page: "LogsAuditoria", icon: ScrollText },
-      { name: "Logs do Sistema", page: "SistemaLogsPage", icon: AlertCircle },
-    ],
-  },
-];
+const SECTION_ERP = {
+  label: "ERP",
+  items: [
+    { name: "Módulos do ERP", page: "ModulosPage", icon: Boxes },
+    { name: "Fiscal", page: "FiscalPage", icon: ScrollText },
+    { name: "Histórico de Preços", page: "HistoricoPrecosPage", icon: BarChart3 },
+  ],
+};
+
+const SECTION_CADASTROS = {
+  label: "Cadastros",
+  items: [
+    { name: "Usuários", page: "Usuarios", icon: Users },
+    { name: "Informações", page: "InformacoesPage", icon: ScrollText },
+    { name: "Clientes", page: "ClientesPage", icon: Building2 },
+    { name: "Transportadoras", page: "Transportadoras", icon: Building2 },
+    { name: "Modalidade de Frete", page: "ModalidadeFrete", icon: Package },
+    { name: "Fornecedores", page: "FornecedoresPage", icon: Building2 },
+  ],
+};
+
+const SECTION_SISTEMA = {
+  label: "Sistema",
+  items: [
+    { name: "Configurações da Empresa", page: "EmpresasConfigPage", icon: Settings },
+    { name: "Integrações", page: "IntegracoesERP", icon: Zap },
+    { name: "Logs de Auditoria", page: "LogsAuditoria", icon: ScrollText },
+    { name: "Logs do Sistema", page: "SistemaLogsPage", icon: AlertCircle },
+  ],
+};
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -209,20 +166,24 @@ export default function Layout({ children, currentPageName }) {
           }).filter(s => s.items.length > 0);
 
           const sections = [
-            STATIC_SECTIONS[0],
+            SECTION_PRINCIPAL,
+            SECTION_ERP,
             ...secoesDinamicas,
-            ...STATIC_SECTIONS.slice(1),
+            SECTION_CADASTROS,
+            SECTION_SISTEMA,
           ];
           setMenuSections(sections);
           setExpandedSections(sections.map(() => false));
         } else {
-          setMenuSections(STATIC_SECTIONS);
-          setExpandedSections(STATIC_SECTIONS.map(() => false));
+          const fallback = [SECTION_PRINCIPAL, SECTION_ERP, SECTION_CADASTROS, SECTION_SISTEMA];
+          setMenuSections(fallback);
+          setExpandedSections(fallback.map(() => false));
         }
       } catch (err) {
         console.warn('[Layout] Erro ao carregar menu, usando estático:', err.message);
-        setMenuSections(STATIC_SECTIONS);
-        setExpandedSections(STATIC_SECTIONS.map(() => false));
+        const fallback = [SECTION_PRINCIPAL, SECTION_ERP, SECTION_CADASTROS, SECTION_SISTEMA];
+        setMenuSections(fallback);
+        setExpandedSections(fallback.map(() => false));
       } finally {
         setMenuCarregado(true);
       }
@@ -347,20 +308,14 @@ export default function Layout({ children, currentPageName }) {
                 } else {
                   itensFiltrados = section.items;
                 }
-              } else if (section.label === "Principal" || section.label === "Cadastros" || section.label === "Engenharia de Produto") {
+              } else if (section.label === "Principal" || section.label === "ERP") {
+                itensFiltrados = section.items; // sempre visível
+              } else if (section.label === "Cadastros") {
                 itensFiltrados = section.items.filter(item => temAcesso(item.name, "cadastro"));
               } else if (section.label === "Sistema") {
                 itensFiltrados = section.items.filter(item => temAcesso(item.name, "sistema"));
-              } else if (section.label === "Comercial") {
-                if (!temAcesso("Comercial", "cadastro")) {
-                  itensFiltrados = [];
-                } else {
-                  itensFiltrados = section.items.filter(item => temAcesso(item.name, "cadastro"));
-                }
-              } else if (section.label === "Estoque") {
-                itensFiltrados = section.items.filter(item => temAcesso(item.name, "cadastro"));
               } else {
-                itensFiltrados = section.items.filter(item => temAcesso(item.modulo || item.name, "modulo"));
+                itensFiltrados = section.items;
               }
               if (itensFiltrados.length === 0) return null;
               return (
