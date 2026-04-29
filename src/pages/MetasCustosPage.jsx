@@ -229,7 +229,7 @@ function AbaCustosFixos({ empresa_id }) {
 
   const carregar = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from("metas_custos_fixos").select("*,centros_custo(descricao)").eq("empresa_id", empresa_id).is("deleted_at", null);
+    const { data } = await supabase.from("despesas_variaveis").select("*,centros_custo(descricao)").eq("empresa_id", empresa_id).is("deleted_at", null);
     const dados = (data || []).map(r => ({ ...r, centro_custo_descricao: r.centros_custo?.descricao }));
     setDados(dados);
     const totalDireto = dados.filter(r => r.tipo === 'direto').reduce((s, r) => s + (r.percentual || 0), 0);
@@ -246,7 +246,7 @@ function AbaCustosFixos({ empresa_id }) {
   const salvar = async () => {
     setSalvando(true);
     const payload = { empresa_id, descricao: form.descricao, percentual: parseFloat(form.percentual) || 0, tipo: form.tipo, centro_custo_id: form.centro_custo_id || null };
-    const { error } = form.id ? await supabase.from("metas_custos_fixos").update(payload).eq("id", form.id) : await supabase.from("metas_custos_fixos").insert(payload);
+    const { error } = form.id ? await supabase.from("despesas_variaveis").update(payload).eq("id", form.id) : await supabase.from("despesas_variaveis").insert(payload);
     setSalvando(false);
     if (!error) { showSuccess({ title: "Salvo!" }); setModalOpen(false); carregar(); }
     else showError({ title: "Erro", description: error.message });
@@ -256,7 +256,7 @@ function AbaCustosFixos({ empresa_id }) {
     title: "Excluir custo fixo?",
     description: `"${row.descricao}" será removido.`,
     onConfirm: async () => {
-      const { error } = await supabase.from("metas_custos_fixos").update({ deleted_at: new Date().toISOString() }).eq("id", row.id);
+      const { error } = await supabase.from("despesas_variaveis").update({ deleted_at: new Date().toISOString() }).eq("id", row.id);
       if (!error) { showSuccess({ title: "Removido!" }); carregar(); }
       else showError({ title: "Erro", description: error.message });
     }
