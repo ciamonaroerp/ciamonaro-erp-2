@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/components/lib/supabaseClient";
 import { Loader2, Clock } from "lucide-react";
 
 function LinhaResumo({ label, valor, destaque = false }) {
@@ -16,6 +16,8 @@ function fmt(val) {
   return Number(val).toLocaleString("pt-BR", { maximumFractionDigits: 1 });
 }
 
+const REQUIRED = ['PRM01', 'PRM02', 'PRM03', 'PRM04', 'PRM05', 'PRM06', 'PRM07', 'PRM08'];
+
 export default function ResumoTecnicoAccordion({ empresaId, quantidade, somaCores, somaPosicoes }) {
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState(null);
@@ -25,7 +27,6 @@ export default function ResumoTecnicoAccordion({ empresaId, quantidade, somaCore
   const debounceRef = useRef(null);
   const cacheRef = useRef({ key: null, resultado: null });
 
-  // Pré-preenche com valores vindos das personalizações selecionadas
   useEffect(() => {
     if (somaCores != null && Number(somaCores) > 0) {
       setCoresManual(String(Number(somaCores)));
@@ -40,7 +41,6 @@ export default function ResumoTecnicoAccordion({ empresaId, quantidade, somaCore
     }
   }, [somaPosicoes]);
 
-  // Recalcula sempre que os inputs mudarem
   useEffect(() => {
     calcular();
   }, [quantidade, coresManual, posicoesManual, empresaId]);
@@ -68,30 +68,66 @@ export default function ResumoTecnicoAccordion({ empresaId, quantidade, somaCore
       setLoading(true);
       setMensagem("");
       try {
-        const res = await base44.functions.invoke("calcularTempoProducao", {
-          empresa_id: empresaId,
-          quantidade: qtd,
-          soma_cores: cores,
-          soma_posicoes: posicoes,
-        });
+        const { data: params, error } = await supabase
+          .from("config_estamparia")
+          .select("codigo, unidade, tempo, valor")
+          .in("codigo", REQUIRED)
+          .eq("empresa_id", empresaId)
+          .is("deleted_at", null);
 
-        const data = res?.data;
+        if (error) throw new Error(error.message);
 
-        if (data?.dados_insuficientes) {
-          setMensagem(data.message || "Parâmetros de estamparia não configurados.");
+        const faltando = REQUIRED.filter(code => !(params || []).find(p => p.codigo === code));
+        if (faltando.length > 0) {
+          setMensagem(`Parâmetros não configurados: ${faltando.join(", ")}. Acesse Configuração Extras → Parâmetros estamparia.`);
           setResultado(null);
           cacheRef.current = { key: null, resultado: null };
           return;
         }
 
-        if (data?.resultado) {
-          setResultado(data.resultado);
-          setMensagem("");
-          cacheRef.current = { key: cacheKey, resultado: data.resultado };
-        } else {
-          setMensagem("Erro ao calcular. Verifique os parâmetros de estamparia.");
+        const get = (codigo) => (params || []).find(p => p.codigo === codigo);
+
+        // PRM01: média de prints por camiseta (unidade)
+        const prm01 = Number(get('PRM01').unidade) || 1;
+        // PRM02: prints/hora; PRM03: máquinas
+        const prints_hora = Number(get('PRM02').unidade) || 0;
+        const maquinas = Number(get('PRM03').unidade) || 0;
+
+        if (prints_hora <= 0 || maquinas <= 0) {
+          setMensagem("PRM02 (prints/hora) e PRM03 (máquinas) devem ser maiores que zero.");
           setResultado(null);
+          return;
         }
+
+        // PRM04–PRM08: lidos da coluna "tempo" em minutos
+        const intervalo_limpeza = Number(get('PRM04').tempo) || 0;
+        const limpeza_impressao = Number(get('PRM05').tempo) || 0;
+        const limpeza_final     = Number(get('PRM06').tempo) || 0;
+        const setup_por_cor     = Number(get('PRM07').tempo) || 0;
+        const jornada           = Number(get('PRM08').tempo) || 0;
+
+        if (jornada <= 0) {
+          setMensagem("PRM08 (jornada) deve ser maior que zero.");
+          setResultado(null);
+          return;
+        }
+
+        // ── Cálculos (mesma lógica do backend calcularTempoProducao) ──
+        const tp = qtd * posicoes * prm01;
+        const ti = (tp / (prints_hora * maquinas)) * 60;
+        const setups = ti < jornada ? cores : Math.ceil(ti / jornada) * cores;
+        const ts = setups * setup_por_cor;
+        const nl = (intervalo_limpeza > 0 && ti >= intervalo_limpeza)
+          ? Math.ceil(ti / intervalo_limpeza) * cores
+          : 0;
+        const tli = nl * limpeza_impressao * cores;
+        const tlf = limpeza_final * setups;
+        const tte = ti + ts + tli + tlf;
+
+        const res = { tp, setups, ti, ts, nl, tli, tlf, tte, jornada };
+        setResultado(res);
+        setMensagem("");
+        cacheRef.current = { key: cacheKey, resultado: res };
       } catch (err) {
         setMensagem("Erro ao calcular: " + (err?.message || "tente novamente."));
         setResultado(null);
@@ -145,14 +181,14 @@ export default function ResumoTecnicoAccordion({ empresaId, quantidade, somaCore
           <p className="text-xs text-slate-400 text-center py-2">{mensagem}</p>
         ) : resultado ? (
           <div className="divide-y divide-slate-100">
-            <LinhaResumo label="TP — Total de prints"                 valor={fmt(resultado.tp)} />
-            <LinhaResumo label="TI — Tempo de impressão (min)"        valor={fmt(resultado.ti)} />
-            <LinhaResumo label="Nº de setups"                         valor={fmt(resultado.setups)} />
-            <LinhaResumo label="TS — Tempo de setup (min)"            valor={fmt(resultado.ts)} />
-            <LinhaResumo label="NL — Nº de limpezas"                  valor={fmt(resultado.nl)} />
-            <LinhaResumo label="TLI — Tempo limpeza impressão (min)"  valor={fmt(resultado.tli)} />
-            <LinhaResumo label="TLF — Tempo limpeza final (min)"      valor={fmt(resultado.tlf)} />
-            <LinhaResumo label="TTE — Tempo total estimado (min)"     valor={fmt(resultado.tte)} destaque />
+            <LinhaResumo label="TP — Total de prints"                valor={fmt(resultado.tp)} />
+            <LinhaResumo label="TI — Tempo de impressão (min)"       valor={fmt(resultado.ti)} />
+            <LinhaResumo label="Nº de setups"                        valor={fmt(resultado.setups)} />
+            <LinhaResumo label="TS — Tempo de setup (min)"           valor={fmt(resultado.ts)} />
+            <LinhaResumo label="NL — Nº de limpezas"                 valor={fmt(resultado.nl)} />
+            <LinhaResumo label="TLI — Tempo limpeza impressão (min)" valor={fmt(resultado.tli)} />
+            <LinhaResumo label="TLF — Tempo limpeza final (min)"     valor={fmt(resultado.tlf)} />
+            <LinhaResumo label="TTE — Tempo total estimado (min)"    valor={fmt(resultado.tte)} destaque />
             {resultado.jornada != null && (
               <div className="pt-2">
                 <p className="text-[10px] text-slate-400">Jornada de referência: {Math.round(resultado.jornada)} min</p>
