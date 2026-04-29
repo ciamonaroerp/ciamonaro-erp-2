@@ -89,6 +89,7 @@ export default function ModuloModal({ open, onClose, editingRow, empresa_id, onS
   useEffect(() => {
     if (open && editingRow) {
       setDadosModulo({ nome_modulo: editingRow.nome_modulo, status: editingRow.status || "Preparado" });
+      setPaginasSelecionadas([]); // limpa enquanto carrega do banco
     } else if (open && !editingRow) {
       setDadosModulo({ nome_modulo: "", status: "Preparado" });
       setPaginasSelecionadas([]);
