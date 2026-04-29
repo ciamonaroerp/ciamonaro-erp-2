@@ -363,9 +363,11 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
     // Só aguarda acabamentos/itensAdicionais se o itemEdicao tem esses dados salvos
     const temAcabSalvos = Array.isArray(itemEdicao.acabamentos) && itemEdicao.acabamentos.length > 0;
     const temAdicSalvos = Array.isArray(itemEdicao.itens_adicionais) && itemEdicao.itens_adicionais.length > 0;
+    const temPersSalvos = Array.isArray(itemEdicao.personalizacoes) && itemEdicao.personalizacoes.length > 0;
     if (querysPendentes) { setLoadingEdicao(true); return; }
     if (temAcabSalvos && acabamentos.length === 0) { setLoadingEdicao(true); return; }
     if (temAdicSalvos && itensAdicionais.length === 0) { setLoadingEdicao(true); return; }
+    if (temPersSalvos && personalizacoes.length === 0) { setLoadingEdicao(true); return; }
 
 
 
@@ -825,6 +827,17 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
         return cfg ? { id: cfg.id, descricao: cfg.nome_acabamento } : { id };
       }),
       acabamentos_ids: form.acabamentos_ids || [],
+      personalizacoes: (form.personalizacoes_ids || []).map(id => {
+        const cfg = personalizacoes.find(p => String(p.id) === String(id));
+        const inputs = personalizacoesSelecionadas[id] || {};
+        return {
+          id,
+          descricao: cfg?.tipo_personalizacao || null,
+          cores: inputs.cores ?? null,
+          posicoes: inputs.posicoes ?? null,
+          valor: inputs.valor_variavel ?? null,
+        };
+      }),
       personalizacoes_payload: (form.personalizacoes_ids || []).map(id => ({
         id,
         ...(personalizacoesSelecionadas[id] || {}),
