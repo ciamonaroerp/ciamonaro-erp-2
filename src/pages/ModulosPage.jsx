@@ -117,7 +117,13 @@ export default function ModulosPage() {
       if (!supabase || !empresa_id) return {};
       const { data } = await supabase.from("modulo_paginas").select("modulo_nome,pagina_nome,label_menu,ordem").eq("empresa_id", empresa_id);
       const mapa = {};
-      (data || []).forEach(r => { if (!mapa[r.modulo_nome]) mapa[r.modulo_nome] = []; mapa[r.modulo_nome].push(r); });
+      (data || []).forEach(r => {
+        if (!mapa[r.modulo_nome]) mapa[r.modulo_nome] = [];
+        // Evita duplicatas por pagina_nome
+        if (!mapa[r.modulo_nome].some(x => x.pagina_nome === r.pagina_nome)) {
+          mapa[r.modulo_nome].push(r);
+        }
+      });
       return mapa;
     },
     enabled: !!empresa_id && !empresaLoading,

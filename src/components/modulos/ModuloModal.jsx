@@ -87,18 +87,23 @@ export default function ModuloModal({ open, onClose, editingRow, empresa_id, onS
   });
 
   useEffect(() => {
-    if (open && editingRow) {
+    if (!open) return;
+    if (editingRow) {
       setDadosModulo({ nome_modulo: editingRow.nome_modulo, status: editingRow.status || "Preparado" });
-      setPaginasSelecionadas([]); // limpa enquanto carrega do banco
-    } else if (open && !editingRow) {
+      // Não limpa paginasSelecionadas aqui — será preenchido pelo useEffect de paginasVinculadas
+    } else {
       setDadosModulo({ nome_modulo: "", status: "Preparado" });
       setPaginasSelecionadas([]);
     }
-  }, [open, editingRow]);
+  }, [open, editingRow?.id]);
 
   useEffect(() => {
-    if (paginasVinculadas) {
-      setPaginasSelecionadas(paginasVinculadas);
+    if (paginasVinculadas && editingRow) {
+      // Deduplica por pagina_nome antes de setar
+      const unicas = paginasVinculadas.filter(
+        (p, idx, arr) => arr.findIndex(x => x.pagina_nome === p.pagina_nome) === idx
+      );
+      setPaginasSelecionadas(unicas);
     }
   }, [paginasVinculadas]);
 
