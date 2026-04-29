@@ -60,10 +60,14 @@ export default function CRMDetalhePage() {
       title: 'Marcar como Ganho?',
       description: 'A oportunidade será encerrada como GANHO.',
       onConfirm: async () => {
-        await supabase.from('crm_oportunidades').update({ status: 'ganho', updated_at: new Date().toISOString() }).eq('id', oportunidadeId);
-        await supabase.from('crm_oportunidade_historico').insert({ oportunidade_id: oportunidadeId, acao: 'ganho', descricao: 'Oportunidade marcada como GANHO' });
-        showSuccess({ title: 'Sucesso', description: 'Oportunidade marcada como GANHO!' });
-        carregar();
+        try {
+          await supabase.from('crm_oportunidades').update({ status: 'ganho', updated_at: new Date().toISOString() }).eq('id', oportunidadeId);
+          await supabase.from('crm_oportunidade_historico').insert({ oportunidade_id: oportunidadeId, acao: 'ganho', descricao: 'Oportunidade marcada como GANHO' });
+          setOp(prev => ({ ...prev, status: 'ganho' }));
+          showSuccess({ title: 'Sucesso', description: 'Oportunidade marcada como GANHO!' });
+        } catch (e) {
+          showError({ title: 'Erro', description: e.message });
+        }
       },
     });
   };
@@ -78,10 +82,14 @@ export default function CRMDetalhePage() {
       title: 'Marcar como Perdido?',
       description: `Motivo: "${motivo?.nome}". Esta ação encerrará a oportunidade.`,
       onConfirm: async () => {
-        await supabase.from('crm_oportunidades').update({ status: 'perdido', motivo_perda_id: motivoSelecionado, motivo_perda_nome: motivo?.nome, updated_at: new Date().toISOString() }).eq('id', oportunidadeId);
-        await supabase.from('crm_oportunidade_historico').insert({ oportunidade_id: oportunidadeId, acao: 'perdido', descricao: `Oportunidade PERDIDA. Motivo: ${motivo?.nome}` });
-        showSuccess({ title: 'Sucesso', description: 'Oportunidade encerrada como perdida.' });
-        carregar();
+        try {
+          await supabase.from('crm_oportunidades').update({ status: 'perdido', motivo_perda_id: motivoSelecionado, motivo_perda_nome: motivo?.nome, updated_at: new Date().toISOString() }).eq('id', oportunidadeId);
+          await supabase.from('crm_oportunidade_historico').insert({ oportunidade_id: oportunidadeId, acao: 'perdido', descricao: `Oportunidade PERDIDA. Motivo: ${motivo?.nome}` });
+          setOp(prev => ({ ...prev, status: 'perdido', motivo_perda_id: motivoSelecionado, motivo_perda_nome: motivo?.nome }));
+          showSuccess({ title: 'Sucesso', description: 'Oportunidade encerrada como perdida.' });
+        } catch (e) {
+          showError({ title: 'Erro', description: e.message });
+        }
       },
     });
   };
@@ -103,11 +111,11 @@ export default function CRMDetalhePage() {
   const salvarTarefa = async () => {
     if (!novaTarefa.titulo) { showError({ title: 'Informe o título da tarefa', description: '' }); return; }
     try {
-      await supabase.from('crm_tarefas').insert({ ...novaTarefa, empresa_id, oportunidade_id: oportunidadeId, status: 'pendente', responsavel_id: erpUsuario?.id || null });
+      const { data } = await supabase.from('crm_tarefas').insert({ ...novaTarefa, empresa_id, oportunidade_id: oportunidadeId, status: 'pendente', responsavel_id: erpUsuario?.id || null }).select().single();
+      setTarefas(prev => [...prev, data]);
       showSuccess({ title: 'Sucesso', description: 'Tarefa criada.' });
       setNovaTarefa({ titulo: '', tipo: 'Ligação', data_execucao: '' });
       setShowTarefaForm(false);
-      carregar();
     } catch (e) {
       showError({ title: 'Erro ao salvar tarefa', description: e.message });
     }
@@ -116,7 +124,8 @@ export default function CRMDetalhePage() {
   const concluirTarefa = async (tarefa) => {
     try {
       await supabase.from('crm_tarefas').update({ status: 'concluida', updated_at: new Date().toISOString() }).eq('id', tarefa.id);
-      carregar();
+      setTarefas(prev => prev.map(t => t.id === tarefa.id ? { ...t, status: 'concluida' } : t));
+      showSuccess({ title: 'Tarefa concluída!' });
     } catch (e) {
       showError({ title: 'Erro', description: e.message });
     }
