@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/components/lib/supabaseClient";
+import { base44 } from "@/api/base44Client";
 import { useEmpresa } from "@/components/context/EmpresaContext";
 import { useGlobalAlert } from "@/components/GlobalAlertDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,6 +11,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Plus, Pencil, Trash2, Target, DollarSign, TrendingUp, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+async function apiCustos(action, empresa_id, payload = {}) {
+  const res = await base44.functions.invoke("metasCustosOperacionais", { action, empresa_id, ...payload });
+  return res.data;
+}
 
 const CATEGORIAS_TERCEIROS = [
   'Corte', 'Confeccao interna', 'Confeccao externa',
@@ -222,21 +228,20 @@ function AbaCustosFixos({ empresa_id }) {
   const [form, setForm] = useState({ id: null, descricao: "", percentual: "", tipo: "direto", centro_custo_id: "" });
   const [centros, setCentros] = useState([]);
 
+  useEffect(() => {
+    supabase.from("centros_custo").select("id,descricao").eq("empresa_id", empresa_id).is("deleted_at", null)
+      .then(({ data }) => setCentros(data || []));
+  }, [empresa_id]);
+
   const carregar = useCallback(async () => {
     setLoading(true);
-    const [{ data: centrosData }, { data, error }] = await Promise.all([
-      supabase.from("centros_custo").select("id,descricao").eq("empresa_id", empresa_id).is("deleted_at", null),
-      supabase.from("despesas_variaveis").select("*").eq("empresa_id", empresa_id).is("deleted_at", null)
-    ]);
-    const centrosList = centrosData || [];
-    setCentros(centrosList);
-    if (error) { console.error("Erro despesas_variaveis:", error.message); setLoading(false); return; }
-    const centrosMap = centrosList.reduce((acc, c) => { acc[c.id] = c.descricao; return acc; }, {});
-    const dados = (data || []).map(r => ({ ...r, centro_custo_descricao: centrosMap[r.centro_custo_id] || null }));
-    setDados(dados);
-    const totalDireto = dados.filter(r => r.tipo === 'direto').reduce((s, r) => s + (r.percentual || 0), 0);
-    const totalIndireto = dados.filter(r => r.tipo === 'indireto').reduce((s, r) => s + (r.percentual || 0), 0);
-    setTotais({ total_direto: totalDireto, total_indireto: totalIndireto });
+    const res = await apiCustos("listar_custos_fixos", empresa_id);
+    if (res?.success) {
+      setDados(res.data || []);
+      setTotais(res.totais || {});
+    } else {
+      showError({ title: "Erro ao carregar", description: res?.error || "Erro desconhecido" });
+    }
     setLoading(false);
   }, [empresa_id]);
 
@@ -247,20 +252,21 @@ function AbaCustosFixos({ empresa_id }) {
 
   const salvar = async () => {
     setSalvando(true);
-    const payload = { empresa_id, descricao: form.descricao, percentual: parseFloat(form.percentual) || 0, tipo: form.tipo, centro_custo_id: form.centro_custo_id || null };
-    const { error } = form.id ? await supabase.from("despesas_variaveis").update(payload).eq("id", form.id) : await supabase.from("despesas_variaveis").insert(payload);
+    const res = await apiCustos("salvar_custo_fixo", empresa_id, {
+      id: form.id || undefined, descricao: form.descricao, percentual: parseFloat(form.percentual) || 0, tipo: form.tipo, centro_custo_id: form.centro_custo_id || null
+    });
     setSalvando(false);
-    if (!error) { showSuccess({ title: "Salvo!" }); setModalOpen(false); carregar(); }
-    else showError({ title: "Erro", description: error.message });
+    if (res?.success) { showSuccess({ title: "Salvo!" }); setModalOpen(false); carregar(); }
+    else showError({ title: "Erro", description: res?.error || "Erro ao salvar" });
   };
 
   const deletar = (row) => showConfirm({
     title: "Excluir custo fixo?",
     description: `"${row.descricao}" será removido.`,
     onConfirm: async () => {
-      const { error } = await supabase.from("despesas_variaveis").update({ deleted_at: new Date().toISOString() }).eq("id", row.id);
-      if (!error) { showSuccess({ title: "Removido!" }); carregar(); }
-      else showError({ title: "Erro", description: error.message });
+      const res = await apiCustos("deletar_custo_fixo", empresa_id, { id: row.id });
+      if (res?.success) { showSuccess({ title: "Removido!" }); carregar(); }
+      else showError({ title: "Erro", description: res?.error || "Erro ao remover" });
     }
   });
 

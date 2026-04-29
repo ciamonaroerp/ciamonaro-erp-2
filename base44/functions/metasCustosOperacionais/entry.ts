@@ -9,7 +9,7 @@ const CATEGORIAS_TERCEIROS = [
 function supabaseAdmin() {
   return createClient(
     Deno.env.get('VITE_SUPABASE_URL'),
-    Deno.env.get('SUPABASE_SERVICE_KEY')
+    Deno.env.get('VITE_SUPABASE_ANON_KEY')
   );
 }
 
