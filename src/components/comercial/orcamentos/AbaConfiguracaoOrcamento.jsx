@@ -81,6 +81,21 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
 
   const subtotalGeral = itensValidos.reduce((s, i) => s + (parseFloat(i.subtotal) || 0), 0);
 
+  // Campos que existem apenas no payload do frontend — não são colunas da tabela
+  const CAMPOS_FRONTEND = ["acabamentos_ids", "personalizacoes_ids", "personalizacoes_payload", "itens_adicionais_ids", "grupo_ids", "resumo_linha_artigo_cor"];
+
+  const sanitizarPayload = (payload) => {
+    const limpo = { ...payload };
+    CAMPOS_FRONTEND.forEach(k => delete limpo[k]);
+    // Serializa arrays/objetos para JSON string (o Supabase espera TEXT nas colunas JSONB legacy)
+    ["acabamentos", "personalizacoes", "itens_adicionais", "operacoes"].forEach(k => {
+      if (limpo[k] !== undefined && typeof limpo[k] !== "string") {
+        limpo[k] = JSON.stringify(limpo[k]);
+      }
+    });
+    return limpo;
+  };
+
   const salvarMutation = useMutation({
     mutationFn: async ({ payload, editId }) => {
       // Garante que o orçamento existe antes de inserir item
@@ -91,12 +106,14 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
       }
       if (!id) throw new Error("Orçamento não identificado");
 
+      const payloadLimpo = sanitizarPayload(payload);
+
       if (editId) {
-        const { data, error } = await supabase.from("orcamento_itens").update({ ...payload, orcamento_id: id }).eq("id", editId).select().single();
+        const { data, error } = await supabase.from("orcamento_itens").update({ ...payloadLimpo, orcamento_id: id }).eq("id", editId).select().single();
         if (error) throw new Error(error.message);
         return { data: { data: data } };
       }
-      const { data, error } = await supabase.from("orcamento_itens").insert({ ...payload, orcamento_id: id, empresa_id: empresaId }).select().single();
+      const { data, error } = await supabase.from("orcamento_itens").insert({ ...payloadLimpo, orcamento_id: id, empresa_id: empresaId }).select().single();
       if (error) throw new Error(error.message);
       return { data: { data: [data] } };
     },
