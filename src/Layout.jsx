@@ -267,27 +267,37 @@ export default function Layout({ children, currentPageName }) {
                         </div>
                         <ChevronRight className={cn("h-3.5 w-3.5 shrink-0 transition-transform duration-200", expanded && "rotate-90")} />
                       </button>
-                      {expanded && (
-                        <div className="mt-0.5 ml-3 pl-3 border-l border-white/20 space-y-0.5">
-                          {itensFiltrados.map(item => {
-                            const isActive = currentPageName === item.page;
-                            return (
-                              <Link
-                                key={item.page}
-                                to={createPageUrl(item.page)}
-                                onClick={() => setSidebarOpen(false)}
-                                className={cn(
-                                  "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-200",
-                                  isActive ? "bg-white/20 text-white font-medium" : "text-blue-100/70 hover:bg-white/10 hover:text-white"
-                                )}
-                              >
-                                <span className="truncate">{item.name}</span>
-                                {isActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-white shrink-0" />}
-                              </Link>
-                            );
-                          })}
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateRows: expanded ? '1fr' : '0fr',
+                          transition: 'grid-template-rows 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
+                        }}
+                      >
+                        <div className="overflow-hidden">
+                          <div className="mt-0.5 ml-3 pl-3 border-l border-white/20 space-y-0.5 pb-1"
+                            style={{ opacity: expanded ? 1 : 0, transition: 'opacity 0.2s ease' }}
+                          >
+                            {itensFiltrados.map(item => {
+                              const isActive = currentPageName === item.page;
+                              return (
+                                <Link
+                                  key={item.page}
+                                  to={createPageUrl(item.page)}
+                                  onClick={() => setSidebarOpen(false)}
+                                  className={cn(
+                                    "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-200",
+                                    isActive ? "bg-white/20 text-white font-medium" : "text-blue-100/70 hover:bg-white/10 hover:text-white"
+                                  )}
+                                >
+                                  <span className="truncate">{item.name}</span>
+                                  {isActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-white shrink-0" />}
+                                </Link>
+                              );
+                            })}
+                          </div>
                         </div>
-                      )}
+                      </div>
                     </div>
                   );
                 })}
