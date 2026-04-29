@@ -34,7 +34,7 @@ export default function FiscalPage() {
     queryFn: async () => {
       if (!supabase) return [];
       const { data, error } = await supabase
-        .from("notas_fiscais")
+        .from("nota_fiscal_importada")
         .select("*")
         .eq("empresa_id", empresa_id)
         .is("deleted_at", null)
@@ -59,7 +59,7 @@ export default function FiscalPage() {
     mutationFn: async (nfe) => {
       if (!supabase) throw new Error("Supabase não inicializado.");
       const { data, error } = await supabase
-        .from("notas_fiscais")
+        .from("nota_fiscal_importada")
         .insert({
           empresa_id,
           chave_nfe: nfe.chave,
@@ -205,7 +205,7 @@ export default function FiscalPage() {
     mutationFn: async (id) => {
       if (!supabase) throw new Error("Supabase não inicializado.");
       const { error } = await supabase
-        .from("notas_fiscais")
+        .from("nota_fiscal_importada")
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw new Error(error.message);
