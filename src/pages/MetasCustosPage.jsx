@@ -343,7 +343,7 @@ function AbaDespesasVariaveis({ empresa_id }) {
 
   const carregar = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from("metas_despesas_variaveis").select("*").eq("empresa_id", empresa_id).is("deleted_at", null);
+    const { data } = await supabase.from("despesas_variaveis").select("*").eq("empresa_id", empresa_id).is("deleted_at", null);
     setDados(data || []);
     const total = (data || []).reduce((s, r) => s + (r.percentual || 0), 0);
     setTotais({ total_despesas: total });
@@ -358,7 +358,7 @@ function AbaDespesasVariaveis({ empresa_id }) {
   const salvar = async () => {
     setSalvando(true);
     const payload = { empresa_id, descricao: form.descricao, percentual: parseFloat(form.percentual) || 0 };
-    const { error } = form.id ? await supabase.from("metas_despesas_variaveis").update(payload).eq("id", form.id) : await supabase.from("metas_despesas_variaveis").insert(payload);
+    const { error } = form.id ? await supabase.from("despesas_variaveis").update(payload).eq("id", form.id) : await supabase.from("despesas_variaveis").insert(payload);
     setSalvando(false);
     if (!error) { showSuccess({ title: "Salvo!" }); setModalOpen(false); carregar(); }
     else showError({ title: "Erro", description: error.message });
@@ -368,7 +368,7 @@ function AbaDespesasVariaveis({ empresa_id }) {
     title: "Excluir despesa?",
     description: `"${row.descricao}" será removida.`,
     onConfirm: async () => {
-      const { error } = await supabase.from("metas_despesas_variaveis").update({ deleted_at: new Date().toISOString() }).eq("id", row.id);
+      const { error } = await supabase.from("despesas_variaveis").update({ deleted_at: new Date().toISOString() }).eq("id", row.id);
       if (!error) { showSuccess({ title: "Removido!" }); carregar(); }
       else showError({ title: "Erro", description: error.message });
     }
