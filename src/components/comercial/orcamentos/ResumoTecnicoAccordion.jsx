@@ -1,37 +1,34 @@
 import { useState, useEffect, useRef } from "react";
-import { supabase } from "@/components/lib/supabaseClient";
+import { base44 } from "@/api/base44Client";
 import { Loader2, Clock } from "lucide-react";
-import { useGlobalAlert } from "@/components/GlobalAlertDialog";
 
 function LinhaResumo({ label, valor, destaque = false }) {
   return (
-    <div className={`flex justify-between items-center py-1 ${destaque ? "border-t border-slate-200 pt-2 mt-1" : ""}`}>
+    <div className={`flex justify-between items-center py-1.5 ${destaque ? "border-t border-slate-200 pt-2 mt-1" : ""}`}>
       <span className={`text-xs ${destaque ? "font-semibold text-slate-700" : "text-slate-500"}`}>{label}</span>
       <span className={`text-xs font-mono ${destaque ? "font-bold text-slate-900" : "text-slate-700"}`}>{valor}</span>
     </div>
   );
 }
 
-function arredondar(val) {
+function fmt(val) {
   if (val == null || isNaN(val)) return "—";
-  return Math.round(Number(val)).toLocaleString("pt-BR");
+  return Number(val).toLocaleString("pt-BR", { maximumFractionDigits: 1 });
 }
 
 export default function ResumoTecnicoAccordion({ empresaId, quantidade, somaCores, somaPosicoes }) {
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState(null);
-  const [semDados, setSemDados] = useState(false);
-  const [semDadosMsg, setSemDadosMsg] = useState("");
+  const [mensagem, setMensagem] = useState("");
   const [coresManual, setCoresManual] = useState("");
   const [posicoesManual, setPosicoesManual] = useState("");
-  const { showError } = useGlobalAlert();
   const debounceRef = useRef(null);
   const cacheRef = useRef({ key: null, resultado: null });
 
+  // Pré-preenche com valores vindos das personalizações selecionadas
   useEffect(() => {
     if (somaCores != null && Number(somaCores) > 0) {
       setCoresManual(String(Number(somaCores)));
-      // Invalida cache para forçar recálculo
       cacheRef.current = { key: null, resultado: null };
     }
   }, [somaCores]);
@@ -39,11 +36,11 @@ export default function ResumoTecnicoAccordion({ empresaId, quantidade, somaCore
   useEffect(() => {
     if (somaPosicoes != null && Number(somaPosicoes) > 0) {
       setPosicoesManual(String(Number(somaPosicoes)));
-      // Invalida cache para forçar recálculo
       cacheRef.current = { key: null, resultado: null };
     }
   }, [somaPosicoes]);
 
+  // Recalcula sempre que os inputs mudarem
   useEffect(() => {
     calcular();
   }, [quantidade, coresManual, posicoesManual, empresaId]);
@@ -56,8 +53,7 @@ export default function ResumoTecnicoAccordion({ empresaId, quantidade, somaCore
       const posicoes = Number(posicoesManual) || 0;
 
       if (qtd <= 0 || cores <= 0 || posicoes <= 0) {
-        setSemDados(true);
-        setSemDadosMsg("Informe quantidade, cores e posições para calcular");
+        setMensagem("Informe quantidade, cores e posições para calcular");
         setResultado(null);
         return;
       }
@@ -65,36 +61,40 @@ export default function ResumoTecnicoAccordion({ empresaId, quantidade, somaCore
       const cacheKey = `${empresaId}-${qtd}-${cores}-${posicoes}`;
       if (cacheRef.current.key === cacheKey && cacheRef.current.resultado) {
         setResultado(cacheRef.current.resultado);
-        setSemDados(false);
+        setMensagem("");
         return;
       }
 
       setLoading(true);
-      setSemDados(false);
-      setSemDadosMsg("");
+      setMensagem("");
       try {
-        const { data: params } = await supabase.from("config_estamparia").select("*").eq("empresa_id", empresaId).maybeSingle();
-        if (!params) {
-          setSemDados(true);
-          setSemDadosMsg("Parâmetros de estamparia não configurados. Acesse Configuração Extras → Parâmetros estamparia.");
+        const res = await base44.functions.invoke("calcularTempoProducao", {
+          empresa_id: empresaId,
+          quantidade: qtd,
+          soma_cores: cores,
+          soma_posicoes: posicoes,
+        });
+
+        const data = res?.data;
+
+        if (data?.dados_insuficientes) {
+          setMensagem(data.message || "Parâmetros de estamparia não configurados.");
           setResultado(null);
           cacheRef.current = { key: null, resultado: null };
           return;
         }
-        const tp = qtd * cores * posicoes;
-        const setups = Math.ceil(tp / (params.capacidade_setup || 1));
-        const ti = tp * (params.tempo_impressao_un || 0);
-        const ts = setups * (params.tempo_setup || 0);
-        const nl = Math.ceil(tp / (params.limpezas_por_prints || 1));
-        const tli = nl * (params.tempo_limpeza_impressao || 0);
-        const tlf = params.tempo_limpeza_final || 0;
-        const tte = ti + ts + tli + tlf;
-        const resultado = { tp, setups, ti, ts, nl, tli, tlf, tte, jornada: params.jornada_referencia };
-        setResultado(resultado);
-        setSemDados(false);
-        cacheRef.current = { key: cacheKey, resultado };
+
+        if (data?.resultado) {
+          setResultado(data.resultado);
+          setMensagem("");
+          cacheRef.current = { key: cacheKey, resultado: data.resultado };
+        } else {
+          setMensagem("Erro ao calcular. Verifique os parâmetros de estamparia.");
+          setResultado(null);
+        }
       } catch (err) {
-        showError({ title: "Erro ao calcular", description: err.message });
+        setMensagem("Erro ao calcular: " + (err?.message || "tente novamente."));
+        setResultado(null);
       } finally {
         setLoading(false);
       }
@@ -116,7 +116,7 @@ export default function ResumoTecnicoAccordion({ empresaId, quantidade, somaCore
               type="text"
               inputMode="numeric"
               value={coresManual}
-              onChange={e => setCoresManual(e.target.value.replace(/\D/g, ""))}
+              onChange={e => { setCoresManual(e.target.value.replace(/\D/g, "")); cacheRef.current = { key: null, resultado: null }; }}
               placeholder="Ex: 2"
               className="w-full h-8 border border-slate-200 rounded-md px-2 text-sm text-center font-mono focus:outline-none focus:ring-2 focus:ring-blue-300"
             />
@@ -127,41 +127,39 @@ export default function ResumoTecnicoAccordion({ empresaId, quantidade, somaCore
               type="text"
               inputMode="numeric"
               value={posicoesManual}
-              onChange={e => setPosicoesManual(e.target.value.replace(/\D/g, ""))}
+              onChange={e => { setPosicoesManual(e.target.value.replace(/\D/g, "")); cacheRef.current = { key: null, resultado: null }; }}
               placeholder="Ex: 1"
               className="w-full h-8 border border-slate-200 rounded-md px-2 text-sm text-center font-mono focus:outline-none focus:ring-2 focus:ring-blue-300"
             />
           </div>
         </div>
+
         <div className="border-t border-slate-100" />
+
         {loading ? (
           <div className="flex items-center gap-2 py-3 justify-center">
             <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
             <span className="text-xs text-slate-400">Calculando...</span>
           </div>
-        ) : semDados || !resultado ? (
-          <p className="text-xs text-slate-400 text-center py-2">
-            {semDadosMsg || "Informe quantidade, cores e posições para calcular"}
-          </p>
-        ) : (
+        ) : mensagem ? (
+          <p className="text-xs text-slate-400 text-center py-2">{mensagem}</p>
+        ) : resultado ? (
           <div className="divide-y divide-slate-100">
-            <LinhaResumo label="TP - Total de prints"            valor={resultado.tp?.toLocaleString("pt-BR")} />
-            <LinhaResumo label="Número de setups"                valor={arredondar(resultado.setups)} />
-            <LinhaResumo label="TI - Tempo de impressão (min)"   valor={arredondar(resultado.ti)} />
-            <LinhaResumo label="TS - Tempo de setup (min)"       valor={arredondar(resultado.ts)} />
-            <LinhaResumo label="NL - Número de limpezas"         valor={arredondar(resultado.nl)} />
-            <LinhaResumo label="TLI - Tempo limpeza impressão (min)" valor={arredondar(resultado.tli)} />
-            <LinhaResumo label="TLF - Tempo limpeza final (min)" valor={arredondar(resultado.tlf)} />
-            <LinhaResumo label="TTE - Tempo total estimado (min)" valor={arredondar(resultado.tte)} destaque />
+            <LinhaResumo label="TP — Total de prints"                 valor={fmt(resultado.tp)} />
+            <LinhaResumo label="TI — Tempo de impressão (min)"        valor={fmt(resultado.ti)} />
+            <LinhaResumo label="Nº de setups"                         valor={fmt(resultado.setups)} />
+            <LinhaResumo label="TS — Tempo de setup (min)"            valor={fmt(resultado.ts)} />
+            <LinhaResumo label="NL — Nº de limpezas"                  valor={fmt(resultado.nl)} />
+            <LinhaResumo label="TLI — Tempo limpeza impressão (min)"  valor={fmt(resultado.tli)} />
+            <LinhaResumo label="TLF — Tempo limpeza final (min)"      valor={fmt(resultado.tlf)} />
+            <LinhaResumo label="TTE — Tempo total estimado (min)"     valor={fmt(resultado.tte)} destaque />
             {resultado.jornada != null && (
-              <div className="pt-2 mt-1">
-                <p className="text-[10px] text-slate-400">
-                  Jornada referência: {Math.round(resultado.jornada)} min
-                </p>
+              <div className="pt-2">
+                <p className="text-[10px] text-slate-400">Jornada de referência: {Math.round(resultado.jornada)} min</p>
               </div>
             )}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
