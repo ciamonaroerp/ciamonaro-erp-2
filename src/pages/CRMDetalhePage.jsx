@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/components/lib/supabaseClient';
 import { useGlobalAlert } from '@/components/GlobalAlertDialog';
 import { useEmpresa } from '@/components/context/EmpresaContext';
+import { useSupabaseAuth } from '@/components/context/SupabaseAuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,6 +17,7 @@ const statusColor = s => ({ aberto: 'bg-blue-100 text-blue-700', ganho: 'bg-gree
 export default function CRMDetalhePage() {
   const navigate = useNavigate();
   const { empresa_id } = useEmpresa();
+  const { erpUsuario } = useSupabaseAuth();
   const { showConfirm, showError, showSuccess } = useGlobalAlert();
 
   const urlParams = new URLSearchParams(window.location.search);
@@ -35,7 +37,7 @@ export default function CRMDetalhePage() {
     setLoading(true);
     try {
       const [opRes, histRes, tarefasRes, motivosRes] = await Promise.all([
-        supabase.from('crm_oportunidades').select('*').eq('id', oportunidadeId).maybeSingle(),
+        supabase.from('crm_oportunidades').select('id,titulo,valor,etapa_id,status,responsavel_nome,responsavel_id,created_at,cliente_nome,artigo_nome,cor_nome,quantidade,observacoes,motivo_perda_id,motivo_perda_nome,orcamento_id').eq('id', oportunidadeId).maybeSingle(),
         supabase.from('crm_oportunidade_historico').select('*').eq('oportunidade_id', oportunidadeId).order('created_at', { ascending: false }),
         supabase.from('crm_tarefas').select('*').eq('oportunidade_id', oportunidadeId).order('data_execucao'),
         supabase.from('crm_motivos_perda').select('*').eq('empresa_id', empresa_id).is('deleted_at', null),
@@ -101,7 +103,7 @@ export default function CRMDetalhePage() {
   const salvarTarefa = async () => {
     if (!novaTarefa.titulo) { showError({ title: 'Informe o título da tarefa', description: '' }); return; }
     try {
-      await supabase.from('crm_tarefas').insert({ ...novaTarefa, empresa_id, oportunidade_id: oportunidadeId, status: 'pendente' });
+      await supabase.from('crm_tarefas').insert({ ...novaTarefa, empresa_id, oportunidade_id: oportunidadeId, status: 'pendente', responsavel_id: erpUsuario?.id || null });
       showSuccess({ title: 'Sucesso', description: 'Tarefa criada.' });
       setNovaTarefa({ titulo: '', tipo: 'Ligação', data_execucao: '' });
       setShowTarefaForm(false);
@@ -113,7 +115,7 @@ export default function CRMDetalhePage() {
 
   const concluirTarefa = async (tarefa) => {
     try {
-      await supabase.from('crm_tarefas').update({ status: 'concluido', updated_at: new Date().toISOString() }).eq('id', tarefa.id);
+      await supabase.from('crm_tarefas').update({ status: 'concluida', updated_at: new Date().toISOString() }).eq('id', tarefa.id);
       carregar();
     } catch (e) {
       showError({ title: 'Erro', description: e.message });
@@ -245,12 +247,12 @@ export default function CRMDetalhePage() {
               </div>
             )}
             {tarefas.map(t => (
-              <div key={t.id} className={`flex items-start justify-between p-3 rounded-lg border ${t.status === 'concluido' ? 'bg-green-50 border-green-200' : 'bg-white border-slate-200'}`}>
+              <div key={t.id} className={`flex items-start justify-between p-3 rounded-lg border ${t.status === 'concluida' ? 'bg-green-50 border-green-200' : 'bg-white border-slate-200'}`}>
                 <div>
-                  <p className={`text-sm font-medium ${t.status === 'concluido' ? 'line-through text-slate-400' : 'text-slate-700'}`}>{t.titulo}</p>
+                  <p className={`text-sm font-medium ${t.status === 'concluida' ? 'line-through text-slate-400' : 'text-slate-700'}`}>{t.titulo}</p>
                   <p className="text-xs text-slate-400">{t.tipo} · {t.data_execucao ? new Date(t.data_execucao).toLocaleDateString('pt-BR') : '—'}</p>
                 </div>
-                {t.status !== 'concluido' && (
+                {t.status !== 'concluida' && (
                   <Button variant="ghost" size="sm" onClick={() => concluirTarefa(t)}>
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
                   </Button>
