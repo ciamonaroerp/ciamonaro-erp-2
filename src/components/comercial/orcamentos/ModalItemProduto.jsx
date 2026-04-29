@@ -332,8 +332,9 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
       setActiveTab("config");
       setItemSalvo(!!itemEdicao?.id);
       setItemDirty(false);
-      setItemAtualizado(null); // Reset sempre — se tiver itemEdicao, carrega abaixo
-
+      setItemAtualizado(null);
+      // Sempre reseta o ref ao abrir para forçar restauração dos dados do itemEdicao
+      itemEdicaoIdRestoradoRef.current = null;
     }
   }, [open]);
 
@@ -356,10 +357,9 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
       return;
     }
 
-    // Aguarda todos os dados externos carregarem antes de restaurar
-    const dadosExternosProntos = acabamentos.length >= 0 && personalizacoes.length >= 0 && itensAdicionais.length >= 0;
-    // Enquanto queries ainda estão buscando (arrays vazios no primeiro render), mostra loading
-    const querysPendentes = produtos.length === 0 && acabamentos.length === 0 && personalizacoes.length === 0;
+    // Aguarda pelo menos os produtos carregarem antes de restaurar
+    // (outros arrays podem estar vazios legitimamente se não há cadastros)
+    const querysPendentes = empresaId && produtos.length === 0;
     if (querysPendentes) {
       setLoadingEdicao(true);
       return;
