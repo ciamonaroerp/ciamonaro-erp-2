@@ -34,9 +34,6 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
 const AuthenticatedApp = () => {
   const { ready, session } = useSupabaseAuth();
 
-  // Rota /admin força login
-  const isAdminRoute = window.location.pathname === '/admin' || new URLSearchParams(window.location.search).get('admin') === 'true';
-
   if (!ready) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
@@ -45,7 +42,7 @@ const AuthenticatedApp = () => {
     );
   }
 
-  if (!session && isAdminRoute) {
+  if (!session) {
     return <Login />;
   }
 
