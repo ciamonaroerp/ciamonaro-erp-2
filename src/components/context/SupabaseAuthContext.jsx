@@ -15,10 +15,57 @@ export function SupabaseAuthProvider({ children }) {
     async function init() {
       if (initialized) return;
       initialized = true;
-      // O onAuthStateChange com INITIAL_SESSION já cuida de setar ready e erpUsuario.
-      // Este init() apenas garante que supabase está disponível.
-      if (!supabase) {
-        console.warn('[SupabaseAuth] Cliente Supabase não inicializado.');
+
+      try {
+        if (!supabase) {
+          console.warn('[SupabaseAuth] Cliente Supabase não inicializado. Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.');
+          if (!cancelled) setReady(true);
+          return;
+        }
+        
+        // Limpa sessão corrompida do localStorage antes de carregar
+        try {
+          const stored = localStorage.getItem('erp_sb_session_v2');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            // Se a sessão armazenada está corrompida ou expirada, limpa
+            if (!parsed || !parsed.session || !parsed.session.user) {
+              localStorage.removeItem('erp_sb_session_v2');
+            }
+          }
+        } catch (e) {
+          // JSON inválido, remove
+          localStorage.removeItem('erp_sb_session_v2');
+        }
+        
+        // Verifica sessão ativa no Supabase
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+
+        if (currentSession?.user) {
+          if (!cancelled) setSession(currentSession);
+          const email = currentSession.user.email;
+
+          // Busca dados do usuário ERP diretamente no Supabase
+          const { data, error } = await supabase
+            .from('erp_usuarios')
+            .select('*')
+            .ilike('email', email)
+            .maybeSingle();
+
+          if (!error && data && !cancelled) {
+            setErpUsuario(data);
+            console.log('[SupabaseAuth] erpUsuario carregado:', data.email, data.perfil, 'empresa_id:', data.empresa_id);
+          } else {
+            console.warn('[SupabaseAuth] erpUsuario não encontrado para:', email, error?.message);
+          }
+        } else {
+          if (!cancelled) setSession(null);
+          console.warn('[SupabaseAuth] Sem sessão ativa no Supabase.');
+        }
+      } catch (err) {
+        console.warn('[SupabaseAuth] Erro ao inicializar:', err.message);
+        if (!cancelled) setSession(null);
+      } finally {
         if (!cancelled) setReady(true);
       }
     }
@@ -33,23 +80,17 @@ export function SupabaseAuthProvider({ children }) {
       if (event === 'SIGNED_OUT') {
         setSession(null);
         setErpUsuario(null);
-        if (!cancelled) setReady(true);
-      } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') && sess?.user) {
-        if (!cancelled) setSession(sess);
+      } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && sess?.user) {
+        setSession(sess);
         const { data } = await supabase
           .from('erp_usuarios')
           .select('*')
           .ilike('email', sess.user.email)
           .maybeSingle();
-        if (data && !cancelled) {
+        if (data) {
           setErpUsuario(data);
           console.log('[SupabaseAuth] erpUsuario atualizado via event:', data.email, 'empresa_id:', data.empresa_id);
         }
-        // Marca ready após carregar erpUsuario via event
-        if (!cancelled) setReady(true);
-      } else if (event === 'INITIAL_SESSION' && !sess) {
-        // Sem sessão no carregamento inicial
-        if (!cancelled) setReady(true);
       }
     });
 
