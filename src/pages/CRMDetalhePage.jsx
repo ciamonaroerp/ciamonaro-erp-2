@@ -33,25 +33,34 @@ export default function CRMDetalhePage() {
   const [showTarefaForm, setShowTarefaForm] = useState(false);
 
   const carregar = useCallback(async () => {
-    if (!oportunidadeId || !empresa_id) return;
+    if (!oportunidadeId) return;
     setLoading(true);
     try {
+      // Busca a oportunidade para extrair empresa_id, caso o contexto ainda não tenha carregado
+      const empresaFiltro = empresa_id;
+
       const [opRes, histRes, tarefasRes, motivosRes] = await Promise.all([
-        supabase.from('crm_oportunidades').select('id,titulo,valor,etapa_id,status,responsavel_nome,responsavel_id,created_at,cliente_nome,artigo_nome,cor_nome,quantidade,observacoes,motivo_perda_id,motivo_perda_nome,orcamento_id').eq('id', oportunidadeId).maybeSingle(),
+        supabase.from('crm_oportunidades').select('id,titulo,valor,etapa_id,status,responsavel_nome,responsavel_id,created_at,cliente_nome,artigo_nome,cor_nome,quantidade,observacoes,motivo_perda_id,motivo_perda_nome,orcamento_id,empresa_id').eq('id', oportunidadeId).maybeSingle(),
         supabase.from('crm_oportunidade_historico').select('*').eq('oportunidade_id', oportunidadeId).order('created_at', { ascending: false }),
         supabase.from('crm_tarefas').select('*').eq('oportunidade_id', oportunidadeId).order('data_execucao'),
-        supabase.from('crm_motivos_perda').select('*').eq('empresa_id', empresa_id).is('deleted_at', null),
+        empresaFiltro
+          ? supabase.from('crm_motivos_perda').select('*').eq('empresa_id', empresaFiltro).is('deleted_at', null)
+          : supabase.from('crm_motivos_perda').select('*').is('deleted_at', null),
       ]);
-      setOp(opRes.data || null);
+      const opData = opRes.data || null;
+      setOp(opData);
       setHistorico(histRes.data || []);
       setTarefas(tarefasRes.data || []);
-      setMotivosPerda(motivosRes.data || []);
+      // Filtra motivos pela empresa da oportunidade se empresa_id do contexto não estava disponível
+      const empId = empresaFiltro || opData?.empresa_id;
+      const motivos = motivosRes.data || [];
+      setMotivosPerda(empId ? motivos.filter(m => m.empresa_id === empId) : motivos);
     } catch (e) {
       showError({ title: 'Erro ao carregar oportunidade', description: e.message });
     } finally {
       setLoading(false);
     }
-  }, [oportunidadeId, empresa_id]);
+  }, [oportunidadeId, empresa_id]); // empresa_id pode ser null; a busca ocorre mesmo sem ele
 
   useEffect(() => { carregar(); }, [carregar]);
 
