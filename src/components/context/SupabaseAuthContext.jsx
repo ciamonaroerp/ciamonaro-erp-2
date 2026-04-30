@@ -49,12 +49,12 @@ export function SupabaseAuthProvider({ children }) {
           const { data, error } = await supabase
             .from('erp_usuarios')
             .select('*')
-            .eq('email', email)
+            .ilike('email', email)
             .maybeSingle();
 
           if (!error && data && !cancelled) {
             setErpUsuario(data);
-            console.log('[SupabaseAuth] erpUsuario carregado:', data.email, data.perfil);
+            console.log('[SupabaseAuth] erpUsuario carregado:', data.email, data.perfil, 'empresa_id:', data.empresa_id);
           } else {
             console.warn('[SupabaseAuth] erpUsuario não encontrado para:', email, error?.message);
           }
@@ -85,9 +85,12 @@ export function SupabaseAuthProvider({ children }) {
         const { data } = await supabase
           .from('erp_usuarios')
           .select('*')
-          .eq('email', sess.user.email)
+          .ilike('email', sess.user.email)
           .maybeSingle();
-        if (data) setErpUsuario(data);
+        if (data) {
+          setErpUsuario(data);
+          console.log('[SupabaseAuth] erpUsuario atualizado via event:', data.email, 'empresa_id:', data.empresa_id);
+        }
       }
     });
 
