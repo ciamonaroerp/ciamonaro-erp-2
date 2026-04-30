@@ -98,17 +98,18 @@ export default function CRMTarefasPage() {
   const carregarTarefas = useCallback(async () => {
     if (!erpUsuario?.id) return;
     setLoading(true);
-    try {
-      const { data } = await supabase.from('crm_tarefas').select('id,titulo,data_execucao,status,tipo,oportunidade_id').eq('responsavel_id', erpUsuario.id).order('data_execucao').limit(100);
-      setTarefas(data || []);
-    } catch (e) {
-      showError({ title: 'Erro ao carregar tarefas', description: e.message });
-    } finally {
-      setLoading(false);
-    }
+    const { data, error } = await supabase
+      .from('crm_tarefas')
+      .select('id,titulo,data_execucao,status,tipo,oportunidade_id,responsavel_id')
+      .eq('responsavel_id', erpUsuario.id)
+      .order('data_execucao')
+      .limit(200);
+    if (error) showError({ title: 'Erro ao carregar tarefas', description: error.message });
+    setTarefas(data || []);
+    setLoading(false);
   }, [erpUsuario?.id]);
 
-  useEffect(() => { carregarTarefas(); }, [erpUsuario?.id]);
+  useEffect(() => { carregarTarefas(); }, [carregarTarefas]);
 
   const concluirTarefa = async (tarefa) => {
     try {

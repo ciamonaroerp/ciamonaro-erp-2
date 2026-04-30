@@ -93,7 +93,7 @@ export default function CRMConfigModal({ empresaId, funil, onClose }) {
     let funilId = funil?.id;
     if (!funilId) {
       try {
-        const { data: novoFunil, error } = await supabase.from('crm_funis').insert({ empresa_id: empresaId, nome: 'Funil Principal' }).select().single();
+        const { data: novoFunil, error } = await supabase.from('crm_funis').insert({ nome: 'Funil Principal' }).select().single();
         if (error || !novoFunil?.id) {
           showError({ title: 'Erro', description: 'Não foi possível criar o funil automaticamente.' });
           return;

@@ -51,15 +51,18 @@ export default function CRMPage() {
 
   const carregarEtapasEFunil = useCallback(async () => {
     if (!empresa_id || !supabase) return;
+    // crm_funis pode não ter empresa_id — busca todos e cruza pelo funil_id das etapas
     const [{ data: funis }, { data: etapasData }] = await Promise.all([
-      supabase.from('crm_funis').select('id,nome').eq('empresa_id', empresa_id).order('created_at'),
-      supabase.from('crm_etapas').select('id,nome,ordem,percentual,funil_id').eq('empresa_id', empresa_id).order('ordem'),
+      supabase.from('crm_funis').select('id,nome').order('created_at'),
+      supabase.from('crm_etapas').select('id,nome,ordem,percentual,funil_id').eq('empresa_id', empresa_id).is('deleted_at', null).order('ordem'),
     ]);
-    const funilPrimeiro = (funis || [])[0] || null;
-    setFunil(funilPrimeiro);
     const etapasAll = etapasData || [];
-    const filtradas = funilPrimeiro
-      ? etapasAll.filter(e => e.funil_id === funilPrimeiro.id).sort((a, b) => a.ordem - b.ordem)
+    // Encontra o funil que tem etapas pertencentes a esta empresa
+    const funilIdsDaEmpresa = [...new Set(etapasAll.map(e => e.funil_id).filter(Boolean))];
+    const funilDaEmpresa = (funis || []).find(f => funilIdsDaEmpresa.includes(f.id)) || null;
+    setFunil(funilDaEmpresa);
+    const filtradas = funilDaEmpresa
+      ? etapasAll.filter(e => e.funil_id === funilDaEmpresa.id).sort((a, b) => a.ordem - b.ordem)
       : etapasAll.sort((a, b) => a.ordem - b.ordem);
     setEtapas(filtradas);
     return filtradas;
