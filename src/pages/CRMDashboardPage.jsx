@@ -41,40 +41,41 @@ export default function CRMDashboardPage() {
   const [motivosPerda, setMotivosPerda] = useState([]);
   const [tarefas, setTarefas] = useState([]);
 
-  useEffect(() => { carregar(); }, [erpUsuario?.id]);
-
   const isAdmin = erpUsuario?.perfil === 'Administrador' ||
     String(erpUsuario?.setor || '').toLowerCase() === 'administrativo';
 
-  const carregar = async () => {
-    setLoading(true);
-    try {
-      // Não-admin vê apenas suas próprias oportunidades
-      const opsFilters = !isAdmin && erpUsuario?.id
-        ? { responsavel_id: erpUsuario.id }
-        : {};
+  useEffect(() => {
+    if (!empresa_id || !erpUsuario?.id) return;
 
-      let opsQuery = supabase.from('crm_oportunidades').select('id,titulo,valor,status,responsavel_nome,responsavel_id,motivo_perda_nome,etapa_id,created_at').eq('empresa_id', empresa_id);
-      if (!isAdmin && erpUsuario?.id) opsQuery = opsQuery.eq('responsavel_id', erpUsuario.id);
-      const queries = [
-        opsQuery,
-        supabase.from('crm_etapas').select('*').eq('empresa_id', empresa_id),
-        supabase.from('crm_motivos_perda').select('*').eq('empresa_id', empresa_id).is('deleted_at', null),
-      ];
-      if (erpUsuario?.id) {
-        queries.push(supabase.from('crm_tarefas').select('id,data_execucao,status').eq('responsavel_id', erpUsuario.id).eq('status', 'pendente').limit(200));
+    const carregar = async () => {
+      setLoading(true);
+      try {
+        let opsQuery = supabase.from('crm_oportunidades')
+          .select('id,titulo,valor,status,responsavel_nome,responsavel_id,motivo_perda_nome,etapa_id,created_at')
+          .eq('empresa_id', empresa_id);
+        if (!isAdmin && erpUsuario?.id) opsQuery = opsQuery.eq('responsavel_id', erpUsuario.id);
+
+        const queries = [
+          opsQuery,
+          supabase.from('crm_etapas').select('id,nome,ordem,percentual').eq('empresa_id', empresa_id).is('deleted_at', null).order('ordem'),
+          supabase.from('crm_motivos_perda').select('id,nome').eq('empresa_id', empresa_id).is('deleted_at', null),
+          supabase.from('crm_tarefas').select('id,data_execucao,status').eq('responsavel_id', erpUsuario.id).eq('status', 'pendente').limit(200),
+        ];
+
+        const [opsRes, etapasRes, motivosRes, tarefasRes] = await Promise.all(queries);
+        setOps(opsRes.data || []);
+        setEtapas(etapasRes.data || []);
+        setMotivosPerda(motivosRes.data || []);
+        setTarefas(tarefasRes?.data || []);
+      } catch (e) {
+        showError({ title: 'Erro ao carregar dashboard', description: e.message });
+      } finally {
+        setLoading(false);
       }
-      const [opsRes, etapasRes, motivosRes, tarefasRes] = await Promise.all(queries);
-      setOps(opsRes.data || []);
-      setEtapas(etapasRes.data || []);
-      setMotivosPerda(motivosRes.data || []);
-      setTarefas(tarefasRes?.data || []);
-    } catch (e) {
-      showError({ title: 'Erro ao carregar dashboard', description: e.message });
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    carregar();
+  }, [empresa_id, erpUsuario?.id, isAdmin]);
 
   // Indicadores
   const abertas = ops.filter(o => o.status === 'aberto');

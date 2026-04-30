@@ -17,9 +17,13 @@ export default function CRMRelatoriosPage() {
   useEffect(() => {
     if (!empresa_id) return;
     setLoading(true);
-    supabase.from('crm_oportunidades').select('id,titulo,valor,status,responsavel_nome,motivo_perda_nome,etapa_id,created_at').eq('empresa_id', empresa_id)
-      .then(({ data }) => setOportunidades(data || []))
-      .catch(e => showError({ title: 'Erro', description: e.message }))
+    supabase.from('crm_oportunidades')
+      .select('id,titulo,valor,status,responsavel_nome,motivo_perda_nome,etapa_id,created_at')
+      .eq('empresa_id', empresa_id)
+      .then(({ data, error }) => {
+        if (error) showError({ title: 'Erro', description: error.message });
+        setOportunidades(data || []);
+      })
       .finally(() => setLoading(false));
   }, [empresa_id]);
 

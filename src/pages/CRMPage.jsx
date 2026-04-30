@@ -1,11 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/components/lib/supabaseClient';
 import { useSupabaseAuth } from '@/components/context/SupabaseAuthContext';
 import { useEmpresa } from '@/components/context/EmpresaContext';
 import { useGlobalAlert } from '@/components/GlobalAlertDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Search, BarChart2, Settings, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -13,7 +12,7 @@ import CRMCardOportunidade from '@/components/crm/CRMCardOportunidade';
 import CRMNovaOportunidadeModal from '@/components/crm/CRMNovaOportunidadeModal';
 import CRMConfigModal from '@/components/crm/CRMConfigModal';
 
-const LIMITE = 50;
+const LIMITE = 100;
 
 export default function CRMPage() {
   const { empresa_id } = useEmpresa();
@@ -26,72 +25,56 @@ export default function CRMPage() {
   const [funil, setFunil] = useState(null);
   const [vendedores, setVendedores] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [carregandoMais, setCarregandoMais] = useState(false);
-  const [pagina, setPagina] = useState(1);
-  const [temMais, setTemMais] = useState(false);
 
   // Filtros
   const [busca, setBusca] = useState('');
   const [mostrarFechados, setMostrarFechados] = useState(false);
-  const [filtroPeriodo, setFiltroPeriodo] = useState('30');
   const [filtroResponsavel, setFiltroResponsavel] = useState('todos');
 
   // Modais
   const [showNova, setShowNova] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
 
   // Drag and drop
   const [dragging, setDragging] = useState(null);
   const [dragOver, setDragOver] = useState(null);
 
-  useEffect(() => {
-    if (erpUsuario) setCurrentUser(erpUsuario);
-  }, [erpUsuario]);
+  // Ref para controlar carregamento
+  const carregandoRef = useRef(false);
 
-  const carregarEtapasEFunil = useCallback(async () => {
-    if (!empresa_id || !supabase) return;
-    // crm_funis pode não ter empresa_id — busca todos e cruza pelo funil_id das etapas
-    const [{ data: funis }, { data: etapasData }] = await Promise.all([
-      supabase.from('crm_funis').select('id,nome').order('created_at'),
-      supabase.from('crm_etapas').select('id,nome,ordem,percentual,funil_id').eq('empresa_id', empresa_id).is('deleted_at', null).order('ordem'),
-    ]);
-    const etapasAll = etapasData || [];
-    // Encontra o funil que tem etapas pertencentes a esta empresa
-    const funilIdsDaEmpresa = [...new Set(etapasAll.map(e => e.funil_id).filter(Boolean))];
-    const funilDaEmpresa = (funis || []).find(f => funilIdsDaEmpresa.includes(f.id)) || null;
-    setFunil(funilDaEmpresa);
-    const filtradas = funilDaEmpresa
-      ? etapasAll.filter(e => e.funil_id === funilDaEmpresa.id).sort((a, b) => a.ordem - b.ordem)
-      : etapasAll.sort((a, b) => a.ordem - b.ordem);
-    setEtapas(filtradas);
-    return filtradas;
-  }, [empresa_id]);
-
-  const montarFiltros = useCallback(() => {
-    const filtros = { empresa_id };
-    if (!mostrarFechados) filtros.status = 'aberto';
-    if (!isAdmin) filtros.responsavel_id = erpUsuario?.id;
-    else if (filtroResponsavel !== 'todos') filtros.responsavel_id = filtroResponsavel;
-    return filtros;
-  }, [empresa_id, mostrarFechados, isAdmin, erpUsuario, filtroResponsavel]);
-
-  const carregarOportunidades = useCallback(async (paginaNum = 1, acumular = false) => {
-    if (!empresa_id) return;
-    if (paginaNum === 1) setLoading(true); else setCarregandoMais(true);
-
-    const filtros = montarFiltros();
-    const dataLimite = new Date();
-    dataLimite.setDate(dataLimite.getDate() - parseInt(filtroPeriodo));
+  const carregar = async () => {
+    if (!empresa_id || !erpUsuario?.id) return;
+    if (carregandoRef.current) return;
+    carregandoRef.current = true;
+    setLoading(true);
 
     try {
+      // 1. Carregar etapas (sem filtro de empresa em crm_funis pois a tabela não tem essa coluna)
+      const [{ data: funis }, { data: etapasData }] = await Promise.all([
+        supabase.from('crm_funis').select('id,nome').order('created_at'),
+        supabase.from('crm_etapas').select('id,nome,ordem,percentual,funil_id')
+          .eq('empresa_id', empresa_id)
+          .is('deleted_at', null)
+          .order('ordem'),
+      ]);
+
+      const etapasAll = etapasData || [];
+      const funilIdsDaEmpresa = [...new Set(etapasAll.map(e => e.funil_id).filter(Boolean))];
+      const funilDaEmpresa = (funis || []).find(f => funilIdsDaEmpresa.includes(f.id)) || null;
+      setFunil(funilDaEmpresa);
+
+      const etapasFiltradas = funilDaEmpresa
+        ? etapasAll.filter(e => e.funil_id === funilDaEmpresa.id).sort((a, b) => a.ordem - b.ordem)
+        : etapasAll.sort((a, b) => a.ordem - b.ordem);
+      setEtapas(etapasFiltradas);
+
+      // 2. Carregar oportunidades — SEM filtro de data para mostrar todas
       let query = supabase
         .from('crm_oportunidades')
         .select('id,titulo,valor,etapa_id,status,responsavel_nome,responsavel_id,created_at,cliente_nome,artigo_nome,cor_nome,quantidade')
         .eq('empresa_id', empresa_id)
-        .gte('created_at', dataLimite.toISOString())
         .order('created_at', { ascending: false })
-        .range((paginaNum - 1) * LIMITE, paginaNum * LIMITE - 1);
+        .limit(LIMITE);
 
       if (!mostrarFechados) query = query.eq('status', 'aberto');
       if (!isAdmin && erpUsuario?.id) query = query.eq('responsavel_id', erpUsuario.id);
@@ -101,39 +84,29 @@ export default function CRMPage() {
       if (error) throw new Error(error.message);
 
       const lista = dados || [];
-      setTemMais(lista.length === LIMITE);
-      if (acumular) setOportunidades(prev => [...prev, ...lista]);
-      else setOportunidades(lista);
+      setOportunidades(lista);
 
-      if (isAdmin && paginaNum === 1) {
-        const usuarios = [...new Map(lista.filter(o => o.responsavel_id).map(o => [o.responsavel_id, { id: o.responsavel_id, nome: o.responsavel_nome }])).values()];
-        setVendedores(prev => {
-          const ids = new Set(prev.map(v => v.id));
-          return [...prev, ...usuarios.filter(u => !ids.has(u.id))];
-        });
+      // Montar lista de vendedores para filtro admin
+      if (isAdmin) {
+        const usuarios = [...new Map(
+          lista.filter(o => o.responsavel_id)
+            .map(o => [o.responsavel_id, { id: o.responsavel_id, nome: o.responsavel_nome }])
+        ).values()];
+        setVendedores(usuarios);
       }
     } catch (e) {
       showError({ title: 'Erro ao carregar dados', description: e.message });
     } finally {
       setLoading(false);
-      setCarregandoMais(false);
+      carregandoRef.current = false;
     }
-  }, [empresa_id, montarFiltros, filtroPeriodo, isAdmin]);
-
-  const carregar = useCallback(async () => {
-    setPagina(1);
-    setVendedores([]);
-    await carregarEtapasEFunil();
-    await carregarOportunidades(1, false);
-  }, [carregarEtapasEFunil, carregarOportunidades]);
-
-  useEffect(() => { carregar(); }, [empresa_id, mostrarFechados, filtroPeriodo, filtroResponsavel]);
-
-  const carregarMais = async () => {
-    const nova = pagina + 1;
-    setPagina(nova);
-    await carregarOportunidades(nova, true);
   };
+
+  // Dispara apenas quando empresa_id e erpUsuario estiverem prontos
+  useEffect(() => {
+    if (!empresa_id || !erpUsuario?.id) return;
+    carregar();
+  }, [empresa_id, erpUsuario?.id, mostrarFechados, filtroResponsavel]);
 
   // Drag and drop
   const onDragStart = (e, op) => {
@@ -203,15 +176,6 @@ export default function CRMPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input placeholder="Buscar..." value={busca} onChange={e => setBusca(e.target.value)} className="pl-9 w-44" />
           </div>
-
-          <Select value={filtroPeriodo} onValueChange={setFiltroPeriodo}>
-            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="30">Últimos 30 dias</SelectItem>
-              <SelectItem value="60">Últimos 60 dias</SelectItem>
-              <SelectItem value="90">Últimos 90 dias</SelectItem>
-            </SelectContent>
-          </Select>
 
           {isAdmin && vendedores.length > 0 && (
             <Select value={filtroResponsavel} onValueChange={setFiltroResponsavel}>
@@ -294,21 +258,12 @@ export default function CRMPage() {
         )}
       </div>
 
-      {/* Carregar mais */}
-      {temMais && !loading && (
-        <div className="flex-shrink-0 pt-3 flex justify-center">
-          <Button variant="outline" onClick={carregarMais} disabled={carregandoMais}>
-            {carregandoMais ? 'Carregando...' : 'Carregar mais'}
-          </Button>
-        </div>
-      )}
-
       {showNova && (
         <CRMNovaOportunidadeModal
           empresaId={empresa_id}
           etapas={etapas}
           funil={funil}
-          currentUser={currentUser}
+          currentUser={erpUsuario}
           onClose={() => setShowNova(false)}
           onSaved={() => { setShowNova(false); carregar(); }}
         />
