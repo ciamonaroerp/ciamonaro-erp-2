@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Search, BarChart2, Settings, RefreshCw } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import CRMCardOportunidade from '@/components/crm/CRMCardOportunidade';
 import CRMNovaOportunidadeModal from '@/components/crm/CRMNovaOportunidadeModal';
 import CRMConfigModal from '@/components/crm/CRMConfigModal';
@@ -19,6 +19,7 @@ export default function CRMPage() {
   const { erpUsuario } = useSupabaseAuth();
   const isAdmin = erpUsuario?.perfil === 'Administrador';
   const { showError } = useGlobalAlert();
+  const navigate = useNavigate();
 
   const [etapas, setEtapas] = useState([]);
   const [oportunidades, setOportunidades] = useState([]);
@@ -260,7 +261,7 @@ export default function CRMPage() {
                         key={op.id}
                         oportunidade={op}
                         onDragStart={onDragStart}
-                        onClick={() => window.location.href = `/CRMDetalhePage?id=${op.id}`}
+                        onClick={() => navigate(`/CRMDetalhePage?id=${op.id}`)}
                       />
                     ))}
                     {cards.length === 0 && (
