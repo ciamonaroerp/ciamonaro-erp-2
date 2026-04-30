@@ -34,7 +34,7 @@ export default function CRMConfigModal({ empresaId, funil, onClose }) {
     }
   };
 
-  useEffect(() => { carregar(); }, []);
+  useEffect(() => { if (empresaId) carregar(); }, [empresaId]);
 
   const adicionarMotivo = async (tabela, nome, reset) => {
     if (!nome.trim() || !supabase) return;
@@ -93,7 +93,7 @@ export default function CRMConfigModal({ empresaId, funil, onClose }) {
     let funilId = funil?.id;
     if (!funilId) {
       try {
-        const { data: novoFunil, error } = await supabase.from('crm_funis').insert({ nome: 'Funil Principal' }).select().single();
+        const { data: novoFunil, error } = await supabase.from('crm_funis').insert({ nome: 'Funil Principal', empresa_id: empresaId }).select().single();
         if (error || !novoFunil?.id) {
           showError({ title: 'Erro', description: 'Não foi possível criar o funil automaticamente.' });
           return;

@@ -177,6 +177,7 @@ export default function CRMNovaOportunidadeModal({ empresaId, etapas, funil, cur
       const corSelecionada = cores.find(c => c.id === form.cor_id);
 
       const data = {
+        empresa_id: empresaId,
         linha_comercial_id: form.linha_comercial_id,
         cor_id: form.cor_id,
         titulo: form.nome.trim() || `${linhaSelecionada?.linha_nome || ''} - ${corSelecionada?.cor_nome || ''}`,
@@ -189,8 +190,9 @@ export default function CRMNovaOportunidadeModal({ empresaId, etapas, funil, cur
         etapa_id: toUUID(form.etapa_id),
         observacoes: form.observacoes || null,
         funil_id: toUUID(funil?.id),
-        responsavel_id: currentUser?.id || currentUser?.email || null,
-        responsavel_nome: currentUser?.full_name || currentUser?.email || null,
+        usuario_id: currentUser?.id || null,
+        responsavel_id: currentUser?.id || null,
+        responsavel_nome: currentUser?.nome || currentUser?.full_name || currentUser?.email || null,
         status: 'aberto',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
