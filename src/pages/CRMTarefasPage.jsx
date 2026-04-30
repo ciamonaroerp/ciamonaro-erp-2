@@ -95,19 +95,29 @@ export default function CRMTarefasPage() {
   const [filtro, setFiltro] = useState('pendentes');
   const [tarefaEditando, setTarefaEditando] = useState(null);
 
+  const isAdmin = erpUsuario?.perfil === 'Administrador';
+
   const carregarTarefas = useCallback(async () => {
     if (!erpUsuario?.id) return;
     setLoading(true);
-    const { data, error } = await supabase
+
+    let query = supabase
       .from('crm_tarefas')
       .select('id,titulo,data_execucao,status,tipo,oportunidade_id,responsavel_id')
-      .eq('responsavel_id', erpUsuario.id)
+      .is('deleted_at', null)
       .order('data_execucao')
-      .limit(200);
+      .limit(500);
+
+    // Admin vê todas; não-admin vê suas tarefas OU tarefas sem responsável atribuído
+    if (!isAdmin) {
+      query = query.or(`responsavel_id.eq.${erpUsuario.id},responsavel_id.is.null`);
+    }
+
+    const { data, error } = await query;
     if (error) showError({ title: 'Erro ao carregar tarefas', description: error.message });
     setTarefas(data || []);
     setLoading(false);
-  }, [erpUsuario?.id]);
+  }, [erpUsuario?.id, isAdmin]);
 
   useEffect(() => { carregarTarefas(); }, [carregarTarefas]);
 
