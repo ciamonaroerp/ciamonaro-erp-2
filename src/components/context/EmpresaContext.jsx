@@ -15,11 +15,13 @@ function isValidUUID(str) {
 export function EmpresaProvider({ children }) {
   const { ready, erpUsuario } = useSupabaseAuth();
 
-  // Usa empresa_id do erpUsuario; só usa VITE_EMPRESA_ID como fallback se for UUID válido
-  const viteEmpresaId = import.meta.env.VITE_EMPRESA_ID;
-  const empresaId = ready
-    ? (erpUsuario?.empresa_id || (isValidUUID(viteEmpresaId) ? viteEmpresaId : null))
-    : null;
+  // Usa SEMPRE empresa_id do erpUsuario. VITE_EMPRESA_ID foi removido como fallback
+  // pois causava registros sendo salvos na empresa errada quando usuario nao tinha empresa_id configurado.
+  const empresaId = ready ? (erpUsuario?.empresa_id || null) : null;
+
+  if (ready && !empresaId) {
+    console.warn('[EmpresaContext] empresa_id não encontrado no erpUsuario. Configure empresa_id na tabela erp_usuarios para o usuário logado.');
+  }
 
   const value = useMemo(() => ({
     empresa_id: empresaId,
