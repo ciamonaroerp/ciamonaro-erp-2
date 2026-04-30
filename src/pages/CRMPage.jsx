@@ -49,36 +49,40 @@ export default function CRMPage() {
     setLoading(true);
 
     try {
-      // 1. Carregar etapas (sem filtro de empresa em crm_funis pois a tabela não tem essa coluna)
+      // 1. Carregar funil e etapas da empresa — crm_funis TEM empresa_id
       const [{ data: funis }, { data: etapasData }] = await Promise.all([
-        supabase.from('crm_funis').select('id,nome').order('created_at'),
+        supabase.from('crm_funis').select('id,nome').eq('empresa_id', empresa_id).is('deleted_at', null).order('created_at'),
         supabase.from('crm_etapas').select('id,nome,ordem,percentual,funil_id')
           .eq('empresa_id', empresa_id)
           .is('deleted_at', null)
           .order('ordem'),
       ]);
 
-      const etapasAll = etapasData || [];
-      const funilIdsDaEmpresa = [...new Set(etapasAll.map(e => e.funil_id).filter(Boolean))];
-      const funilDaEmpresa = (funis || []).find(f => funilIdsDaEmpresa.includes(f.id)) || null;
+      const funilDaEmpresa = (funis || [])[0] || null;
       setFunil(funilDaEmpresa);
 
       const etapasFiltradas = funilDaEmpresa
-        ? etapasAll.filter(e => e.funil_id === funilDaEmpresa.id).sort((a, b) => a.ordem - b.ordem)
-        : etapasAll.sort((a, b) => a.ordem - b.ordem);
+        ? (etapasData || []).filter(e => e.funil_id === funilDaEmpresa.id).sort((a, b) => a.ordem - b.ordem)
+        : (etapasData || []).sort((a, b) => a.ordem - b.ordem);
       setEtapas(etapasFiltradas);
 
-      // 2. Carregar oportunidades — SEM filtro de data para mostrar todas
+      // 2. Carregar oportunidades — sem filtro por responsavel_id (campo é null em muitos registros)
+      // Filtrar apenas por empresa_id; responsavel_nome já vem desnormalizado
       let query = supabase
         .from('crm_oportunidades')
-        .select('id,titulo,valor,etapa_id,status,responsavel_nome,responsavel_id,created_at,cliente_nome,artigo_nome,cor_nome,quantidade')
+        .select('id,titulo,valor,etapa_id,status,responsavel_nome,responsavel_id,usuario_id,created_at,cliente_nome,artigo_nome,cor_nome,quantidade')
         .eq('empresa_id', empresa_id)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false })
         .limit(LIMITE);
 
       if (!mostrarFechados) query = query.eq('status', 'aberto');
-      if (!isAdmin && erpUsuario?.id) query = query.eq('responsavel_id', erpUsuario.id);
-      else if (isAdmin && filtroResponsavel !== 'todos') query = query.eq('responsavel_id', filtroResponsavel);
+      // Filtro de vendedor usa usuario_id ou responsavel_id
+      if (!isAdmin && erpUsuario?.id) {
+        query = query.or(`usuario_id.eq.${erpUsuario.id},responsavel_id.eq.${erpUsuario.id}`);
+      } else if (isAdmin && filtroResponsavel !== 'todos') {
+        query = query.or(`usuario_id.eq.${filtroResponsavel},responsavel_id.eq.${filtroResponsavel}`);
+      }
 
       const { data: dados, error } = await query;
       if (error) throw new Error(error.message);
@@ -86,13 +90,16 @@ export default function CRMPage() {
       const lista = dados || [];
       setOportunidades(lista);
 
-      // Montar lista de vendedores para filtro admin
+      // Montar lista de vendedores para filtro admin (usa responsavel_nome desnormalizado)
       if (isAdmin) {
-        const usuarios = [...new Map(
-          lista.filter(o => o.responsavel_id)
-            .map(o => [o.responsavel_id, { id: o.responsavel_id, nome: o.responsavel_nome }])
-        ).values()];
-        setVendedores(usuarios);
+        const usuariosMap = new Map();
+        lista.forEach(o => {
+          const uid = o.usuario_id || o.responsavel_id;
+          if (uid && !usuariosMap.has(uid)) {
+            usuariosMap.set(uid, { id: uid, nome: o.responsavel_nome || 'Sem nome' });
+          }
+        });
+        setVendedores([...usuariosMap.values()]);
       }
     } catch (e) {
       showError({ title: 'Erro ao carregar dados', description: e.message });
@@ -129,14 +136,29 @@ export default function CRMPage() {
     setDragging(null);
   };
 
+  // IDs de etapas válidas (não deletadas) que existem no kanban
+  const etapaIds = new Set(etapas.map(e => e.id));
+
   const opPorEtapa = etapa => {
-    let lista = oportunidades.filter(o => o.etapa_id === etapa.id);
+    let lista;
+    if (etapa.__semEtapa) {
+      // Oportunidades sem etapa válida (etapa deletada ou null)
+      lista = oportunidades.filter(o => !o.etapa_id || !etapaIds.has(o.etapa_id));
+    } else {
+      lista = oportunidades.filter(o => o.etapa_id === etapa.id);
+    }
     if (busca) {
       const b = busca.toLowerCase();
       lista = lista.filter(o => o.titulo?.toLowerCase().includes(b) || o.cliente_nome?.toLowerCase().includes(b));
     }
     return lista;
   };
+
+  // Oportunidades sem etapa válida (etapa foi deletada)
+  const opsSemEtapa = oportunidades.filter(o => !o.etapa_id || !etapaIds.has(o.etapa_id));
+  const etapasComSemEtapa = opsSemEtapa.length > 0
+    ? [...etapas, { id: '__sem_etapa__', nome: 'Sem Etapa', ordem: 9999, percentual: 0, __semEtapa: true }]
+    : etapas;
 
   const totalValor = oportunidades.filter(o => o.status === 'aberto').reduce((s, o) => s + (o.valor || 0), 0);
   const formatVal = v => v?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) || 'R$ 0,00';
@@ -206,7 +228,7 @@ export default function CRMPage() {
           </div>
         ) : (
           <div className="flex gap-4 h-full pb-2">
-            {etapas.map(etapa => {
+            {etapasComSemEtapa.map(etapa => {
               const cards = opPorEtapa(etapa);
               const totalEtapa = cards.filter(o => o.status === 'aberto').reduce((s, o) => s + (o.valor || 0), 0);
               return (
@@ -215,8 +237,8 @@ export default function CRMPage() {
                   className={`flex-shrink-0 w-72 rounded-xl border flex flex-col transition-colors ${
                     dragOver === etapa.id ? 'border-blue-400 bg-blue-50' : 'border-slate-200 bg-slate-50'
                   }`}
-                  onDragOver={e => onDragOver(e, etapa.id)}
-                  onDrop={e => onDrop(e, etapa)}
+                  onDragOver={!etapa.__semEtapa ? e => onDragOver(e, etapa.id) : undefined}
+                  onDrop={!etapa.__semEtapa ? e => onDrop(e, etapa) : undefined}
                   onDragLeave={() => setDragOver(null)}
                 >
                   {/* Cabeçalho coluna */}
