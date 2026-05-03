@@ -29,7 +29,13 @@ function StatCard({ icon: Icon, iconBg, iconColor, label, value, sub }) {
   );
 }
 
-const todayStr = () => new Date().toISOString().split('T')[0];
+const todayLocal = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+};
+const isPast = (d) => { if (!d) return false; return d.slice(0,10) < todayLocal(); };
+const isToday = (d) => { if (!d) return false; return d.slice(0,10) === todayLocal(); };
+const isFuture = (d) => { if (!d) return true; return d.slice(0,10) > todayLocal(); };
 
 export default function CRMDashboardPage() {
   const { showError } = useGlobalAlert();
@@ -59,7 +65,17 @@ export default function CRMDashboardPage() {
           opsQuery,
           supabase.from('crm_etapas').select('id,nome,ordem,percentual').eq('empresa_id', empresa_id).is('deleted_at', null).order('ordem'),
           supabase.from('crm_motivos_perda').select('id,nome').eq('empresa_id', empresa_id).is('deleted_at', null),
-          supabase.from('crm_tarefas').select('id,data_execucao,status').eq('responsavel_id', erpUsuario.id).eq('status', 'pendente').limit(200),
+          (() => {
+            let q = supabase.from('crm_tarefas')
+              .select('id,data_execucao,status')
+              .eq('status', 'pendente')
+              .is('deleted_at', null)
+              .limit(500);
+            if (!isAdmin) {
+              q = q.or(`responsavel_id.eq.${erpUsuario.id},responsavel_id.is.null`);
+            }
+            return q;
+          })(),
         ];
 
         const [opsRes, etapasRes, motivosRes, tarefasRes] = await Promise.all(queries);
@@ -117,9 +133,8 @@ export default function CRMDashboardPage() {
   });
   const motivosList = Object.entries(perdaPorMotivo).sort((a, b) => b[1] - a[1]);
 
-  const t = todayStr();
-  const tarefasAtrasadas = tarefas.filter(x => x.data_execucao?.split('T')[0] < t).length;
-  const tarefasHoje = tarefas.filter(x => x.data_execucao?.split('T')[0] === t).length;
+  const tarefasAtrasadas = tarefas.filter(x => isPast(x.data_execucao)).length;
+  const tarefasHoje = tarefas.filter(x => isToday(x.data_execucao)).length;
   const tarefasPendentes = tarefas.length;
 
   if (loading) {
