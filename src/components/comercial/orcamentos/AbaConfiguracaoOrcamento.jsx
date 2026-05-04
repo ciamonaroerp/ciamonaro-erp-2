@@ -67,6 +67,7 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
         .from("orcamento_itens")
         .select("*")
         .eq("orcamento_id", idLocal)
+        .is("deleted_at", null)
         .order("sequencia");
       if (error) console.warn("[AbaConfig] Erro ao buscar itens:", error.message);
       const parseJson = (v) => {
@@ -144,10 +145,10 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
 
   const excluirMutation = useMutation({
     mutationFn: async (target) => {
-      // Para produtos compostos, exclui todos os registros do grupo
+      // Para produtos compostos, aplica soft delete em todos os registros do grupo
       const grupo = target._grupo || [target];
       const ids = grupo.map(r => r.id);
-      const { error } = await supabase.from("orcamento_itens").delete().in("id", ids);
+      const { error } = await supabase.from("orcamento_itens").update({ deleted_at: new Date().toISOString() }).in("id", ids);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
