@@ -10,6 +10,7 @@ export function useOrcamentoItens(orcamentoId) {
         .from("orcamento_itens")
         .select("*")
         .eq("orcamento_id", orcamentoId)
+        .is("deleted_at", null)
         .order("created_at", { ascending: true });
       if (error) throw new Error(error.message);
       return data || [];

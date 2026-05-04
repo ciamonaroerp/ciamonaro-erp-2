@@ -815,6 +815,16 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
     const valorUnitario = parseMoeda(form.valor_unitario);
     const quantidade = parseInt(form.quantidade);
 
+    // Captura usuario_id do usuário logado
+    let usuario_id = null;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.id) {
+        const { data: erpUser } = await supabase.from("erp_usuarios").select("id").eq("email", user.email).maybeSingle();
+        usuario_id = erpUser?.id || null;
+      }
+    } catch { /* ignora erro — salva sem usuario_id */ }
+
     const codigoUnicoFinal = estruturaProduto.tipo_produto === 'composto'
       ? JSON.stringify(tecidosSelecionados)
       : form.codigo_unico || null;
@@ -887,6 +897,7 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
       subtotal: valorUnitario * quantidade,
       orcamento_id: form.orcamento_id || null,
       grupo_ids: itemEdicao?._grupo ? itemEdicao._grupo.map(r => ({ id: r.id, indice: r.indice })) : null,
+      usuario_id,
     };
 
     // 1️⃣ SALVA
