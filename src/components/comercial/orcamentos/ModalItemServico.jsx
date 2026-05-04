@@ -141,22 +141,26 @@ export default function ModalItemServico({ open, onClose, onSalvar, empresaId, p
   const handleSalvar = async () => {
     if (!validar()) return;
     setSalvando(true);
-    const valorUnitario = parseMoeda(form.valor_unitario);
-    const quantidade = parseInt(form.quantidade);
-    const payload = {
-      sequencia: parseInt(form.sequencia),
-      tipo_item: "Serviço",
-      quantidade,
-      personalizacoes: form.personalizacoes,
-      operacoes: form.operacoes,
-      observacoes: form.observacoes || null,
-      valor_unitario: valorUnitario,
-      subtotal: valorUnitario * quantidade,
-      produto_percentual: 0,
-      servico_percentual: 100,
-    };
-    await onSalvar(payload, itemEdicao?.id);
-    setSalvando(false);
+    try {
+      const valorUnitario = parseMoeda(form.valor_unitario);
+      const quantidade = parseInt(form.quantidade);
+      const payload = {
+        sequencia: parseInt(form.sequencia),
+        tipo_item: "Serviço",
+        quantidade,
+        personalizacoes: form.personalizacoes,
+        operacoes: form.operacoes,
+        observacoes: form.observacoes || null,
+        valor_unitario: valorUnitario,
+        subtotal: valorUnitario * quantidade,
+        produto_percentual: 0,
+        servico_percentual: 100,
+      };
+      await onSalvar(payload, itemEdicao?.id);
+      onClose();
+    } finally {
+      setSalvando(false);
+    }
   };
 
   return (
