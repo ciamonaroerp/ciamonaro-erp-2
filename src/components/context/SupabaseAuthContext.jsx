@@ -68,9 +68,13 @@ export function SupabaseAuthProvider({ children }) {
           : performance.navigation?.type === 1;
 
         if (isReload) {
-          // Apenas limpa localmente, sem chamar signOut no servidor (evita 404)
+          // Limpa manualmente todas as chaves do Supabase no localStorage
           localStorage.removeItem('erp_sb_session_v2');
-          try { await supabase.auth.signOut({ scope: 'local' }); } catch (_) {}
+          Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('sb-') || key.includes('supabase')) {
+              localStorage.removeItem(key);
+            }
+          });
           if (!cancelled) { updateSession(null); updateErpUsuario(null); setReady(true); }
           return;
         }
