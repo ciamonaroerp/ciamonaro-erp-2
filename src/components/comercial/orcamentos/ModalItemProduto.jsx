@@ -801,6 +801,7 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
       setItemAtualizado(data);
       setForm(prev => ({ ...prev, valor_unitario: fmtMoeda(valorUnitario), subtotal: fmtMoeda(subtotal) }));
       if (orcamentoId) await qc.refetchQueries({ queryKey: ["orcamento-itens", orcamentoId], exact: true });
+      onClose();
     } catch (err) {
       showError({ title: "Erro ao salvar valores", description: err.message });
     } finally {
@@ -1282,18 +1283,15 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
                   <ComposicaoCustos item={itemAtualizado || itemEdicao} grupo={itemEdicao?._grupo} />
                   <ValoresItem item={itemAtualizado || itemEdicao} />
                   <div className="flex justify-end gap-2 pt-4 border-t mt-2">
-                    <Button variant="outline" onClick={onClose} disabled={salvando}>Fechar</Button>
-                    {parseMoeda(form.valor_unitario) > 0 && (
-                      <Button
-                        onClick={handleSalvarValores}
-                        disabled={salvando}
-                        style={{ background: "#3B5CCC" }}
-                        className="text-white min-w-[100px]"
-                      >
-                        {salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}
-                      </Button>
-                    )}
-                  </div>
+                     <Button
+                       onClick={handleSalvarValores}
+                       disabled={salvando || parseMoeda(form.valor_unitario) <= 0}
+                       style={{ background: "#3B5CCC" }}
+                       className="text-white min-w-[100px]"
+                     >
+                       {salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}
+                     </Button>
+                   </div>
                 </>
               )}
             </TabsContent>
