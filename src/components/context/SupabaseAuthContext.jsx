@@ -61,6 +61,19 @@ export function SupabaseAuthProvider({ children }) {
           return;
         }
 
+        // Se o usuário fez refresh manual (F5 / Ctrl+R), força logout e exibe login
+        const navEntries = performance.getEntriesByType('navigation');
+        const isReload = navEntries.length > 0
+          ? navEntries[0].type === 'reload'
+          : performance.navigation?.type === 1;
+
+        if (isReload) {
+          await supabase.auth.signOut();
+          localStorage.removeItem('erp_sb_session_v2');
+          if (!cancelled) { updateSession(null); updateErpUsuario(null); setReady(true); }
+          return;
+        }
+
         // Limpa sessão corrompida do localStorage
         try {
           const stored = localStorage.getItem('erp_sb_session_v2');
