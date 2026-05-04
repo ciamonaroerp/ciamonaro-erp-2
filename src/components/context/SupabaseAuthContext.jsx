@@ -100,9 +100,41 @@ export function SupabaseAuthProvider({ children }) {
 
     init();
 
+    // Quando a aba volta ao foco, verifica e renova a sessão se necessário
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        try {
+          const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+          if (error || !currentSession) {
+            // Sessão perdida, força logout
+            setSession(null);
+            setErpUsuario(null);
+            return;
+          }
+          // Verifica se o token está próximo de expirar (menos de 5 min)
+          const expiresAt = currentSession.expires_at * 1000;
+          const now = Date.now();
+          const fiveMinutes = 5 * 60 * 1000;
+          if (expiresAt - now < fiveMinutes) {
+            const { data: refreshData } = await supabase.auth.refreshSession();
+            if (refreshData?.session) {
+              setSession(refreshData.session);
+            }
+          } else {
+            setSession(currentSession);
+          }
+        } catch (err) {
+          console.warn('[SupabaseAuth] Erro ao verificar sessão na visibilidade:', err.message);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       cancelled = true;
       subscription?.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
