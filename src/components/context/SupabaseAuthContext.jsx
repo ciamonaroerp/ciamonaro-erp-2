@@ -80,14 +80,18 @@ export function SupabaseAuthProvider({ children }) {
       if (event === 'SIGNED_OUT') {
         setSession(null);
         setErpUsuario(null);
-      } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && sess?.user) {
-        setSession(sess);
+      } else if (event === 'TOKEN_REFRESHED' && sess?.user) {
+        // Apenas atualiza a sessão, não recarrega erpUsuario (já está em memória)
+        if (!cancelled) setSession(sess);
+        console.log('[SupabaseAuth] Token renovado para:', sess.user.email);
+      } else if (event === 'SIGNED_IN' && sess?.user) {
+        if (!cancelled) setSession(sess);
         const { data } = await supabase
           .from('erp_usuarios')
           .select('*')
           .ilike('email', sess.user.email)
           .maybeSingle();
-        if (data) {
+        if (data && !cancelled) {
           setErpUsuario(data);
           console.log('[SupabaseAuth] erpUsuario atualizado via event:', data.email, 'empresa_id:', data.empresa_id);
         }
