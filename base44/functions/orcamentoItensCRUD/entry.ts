@@ -905,7 +905,6 @@ Deno.serve(async (req) => {
         .from('orcamento_itens')
         .select('id, personalizacoes, acabamentos, itens_adicionais')
         .is('deleted_at', null);
-      if (emp_id) q = q.eq('empresa_id', emp_id);
       const { data: itens } = await q.limit(2000);
 
       const parseJsonb = (v) => {
