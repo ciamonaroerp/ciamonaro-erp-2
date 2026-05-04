@@ -989,7 +989,7 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
                   return (
                     <div key={indice} className="space-y-1">
                       <Label className="text-xs font-medium text-slate-600">
-                        Tecido {indice}{grupo.resumo ? ` - ${grupo.resumo}` : ''}
+                        Tecido
                       </Label>
                       <SearchCombobox
                         options={grupo.opcoes}
@@ -1005,7 +1005,7 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
               ) : (
                 <div className="space-y-1">
                   <Label className="text-xs font-medium text-slate-600">
-                    Tecido{estruturaProduto.tecidos[1]?.resumo ? ` - ${estruturaProduto.tecidos[1].resumo}` : ''}
+                    Tecido
                   </Label>
                   <SearchCombobox
                     options={estruturaProduto.tecidos[1]?.opcoes || []}
