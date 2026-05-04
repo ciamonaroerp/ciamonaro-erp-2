@@ -61,15 +61,16 @@ export function SupabaseAuthProvider({ children }) {
           return;
         }
 
-        // Se o usuário fez refresh manual (F5 / Ctrl+R), força logout e exibe login
+        // Se o usuário fez refresh manual (F5 / Ctrl+R), limpa sessão local e exibe login
         const navEntries = performance.getEntriesByType('navigation');
         const isReload = navEntries.length > 0
           ? navEntries[0].type === 'reload'
           : performance.navigation?.type === 1;
 
         if (isReload) {
-          await supabase.auth.signOut();
+          // Apenas limpa localmente, sem chamar signOut no servidor (evita 404)
           localStorage.removeItem('erp_sb_session_v2');
+          try { await supabase.auth.signOut({ scope: 'local' }); } catch (_) {}
           if (!cancelled) { updateSession(null); updateErpUsuario(null); setReady(true); }
           return;
         }
