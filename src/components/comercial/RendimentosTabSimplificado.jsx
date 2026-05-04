@@ -23,7 +23,7 @@ async function invoke(action, payload) {
     return { data: { data: data || [] } };
   }
   if (action === 'list_produto_composicao_empresa') {
-    const { data } = await supabase.from('produto_composicao').select('*').eq('empresa_id', payload.empresa_id).is('deleted_at', null);
+    const { data } = await supabase.from('produto_composicao').select('*').eq('empresa_id', payload.empresa_id);
     return { data: { data: data || [] } };
   }
   if (action === 'list_rendimento_valores') {

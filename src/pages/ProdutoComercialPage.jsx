@@ -201,7 +201,7 @@ export default function ProdutoComercialPage() {
     queryFn: async () => {
       if (!empresa_id) return [];
       const { data } = await supabase
-        .from('rendimentos')
+        .from('produto_rendimentos')
         .select('id, nome')
         .eq('empresa_id', empresa_id)
         .is('deleted_at', null)
