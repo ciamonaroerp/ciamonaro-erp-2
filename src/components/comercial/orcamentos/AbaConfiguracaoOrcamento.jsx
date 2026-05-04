@@ -53,9 +53,9 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
 
   // Sincroniza prop orcamentoId → idLocal (cobre caso de edição onde prop chega depois)
   useEffect(() => {
-    if (orcamentoId && orcamentoId !== idLocal) {
+    if (orcamentoId) {
       setIdLocal(orcamentoId);
-      qc.invalidateQueries(["orcamento-itens", orcamentoId]);
+      qc.removeQueries(["orcamento-itens", orcamentoId]);
     }
   }, [orcamentoId]);
 
