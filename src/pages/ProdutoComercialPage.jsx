@@ -197,7 +197,7 @@ export default function ProdutoComercialPage() {
   }, [editingId, modalOpen, artigos, precosExistentes, formData.variáveis]);
 
   const { data: todasComposicoes = [] } = useQuery({
-    queryKey: ["rendimentos", empresa_id],
+    queryKey: ["produto-rendimentos", empresa_id],
     queryFn: async () => {
       if (!empresa_id) return [];
       const { data } = await supabase
@@ -208,7 +208,7 @@ export default function ProdutoComercialPage() {
         .order('nome');
       return data || [];
     },
-    enabled: !!modalOpen,
+    enabled: !!empresa_id,
     staleTime: 60000,
   });
 

@@ -19,7 +19,7 @@ export default function ComposicaoPecaTab() {
   const [nomeRendimento, setNomeRendimento] = useState("");
 
   const { data: rendimentos = [], isLoading } = useQuery({
-    queryKey: ["rendimentos", empresa_id],
+    queryKey: ["produto-rendimentos", empresa_id],
     queryFn: async () => {
       if (!empresa_id) return [];
       const { data } = await supabase.from("produto_rendimentos").select("*").eq("empresa_id", empresa_id).is("deleted_at", null).order("nome");
@@ -34,7 +34,7 @@ export default function ComposicaoPecaTab() {
       const { error } = await supabase.from("produto_rendimentos").insert({ empresa_id, nome: nomeRendimento.trim() });
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => { qc.invalidateQueries(["rendimentos", empresa_id]); closeModal(); showSuccess({ title: "Composição criada", description: "Composição cadastrada com sucesso." }); },
+    onSuccess: () => { qc.invalidateQueries(["produto-rendimentos", empresa_id]); closeModal(); showSuccess({ title: "Composição criada", description: "Composição cadastrada com sucesso." }); },
     onError: (e) => showError({ title: "Erro ao criar composição", description: e.message }),
   });
 
@@ -43,7 +43,7 @@ export default function ComposicaoPecaTab() {
       const { error } = await supabase.from("produto_rendimentos").update({ nome: nomeRendimento.trim() }).eq("id", editingRendimento.id);
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => { qc.invalidateQueries(["rendimentos", empresa_id]); closeModal(); showSuccess({ title: "Composição atualizada", description: "Nome alterado com sucesso." }); },
+    onSuccess: () => { qc.invalidateQueries(["produto-rendimentos", empresa_id]); closeModal(); showSuccess({ title: "Composição atualizada", description: "Nome alterado com sucesso." }); },
     onError: (e) => showError({ title: "Erro ao atualizar composição", description: e.message }),
   });
 
@@ -52,7 +52,7 @@ export default function ComposicaoPecaTab() {
       const { error } = await supabase.from("produto_rendimentos").update({ deleted_at: new Date().toISOString() }).eq("id", id);
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => { qc.invalidateQueries(["rendimentos", empresa_id]); qc.invalidateQueries(["rendimentos-valores", empresa_id]); showSuccess({ title: "Composição excluída", description: "Composição removida com sucesso." }); },
+    onSuccess: () => { qc.invalidateQueries(["produto-rendimentos", empresa_id]); qc.invalidateQueries(["rendimentos-valores", empresa_id]); showSuccess({ title: "Composição excluída", description: "Composição removida com sucesso." }); },
     onError: (e) => showError({ title: "Erro ao excluir composição", description: e.message }),
   });
 

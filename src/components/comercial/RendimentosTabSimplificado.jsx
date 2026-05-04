@@ -117,7 +117,7 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
   });
 
   const { data: rendimentos = [] } = useQuery({
-    queryKey: ["rendimentos", empresa_id],
+    queryKey: ["produto-rendimentos", empresa_id],
     queryFn: async () => {
       if (!empresa_id) return [];
       const res = await invoke('list_rendimentos', { empresa_id });
@@ -285,15 +285,13 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
     staleTime: 30000,
   });
 
-  // Retorna: 'pendente' | 'pronto' baseado em sincronizado da tabela produto_rendimento_valores
+  // Retorna: 'pendente' | 'pronto' baseado na existência de valores > 0
   const getStatus = (produto_id, vinculo_id) => {
-    // Procura valores do produto que estejam sincronizados
-    const valoresDoP = valores.filter(v => v.produto_id === produto_id);
+    const valoresDoP = valores.filter(v => v.produto_id === produto_id && !v.deleted_at);
     if (valoresDoP.length === 0) return 'pendente';
-    
-    // Se todos estão sincronizados = pronto, senão = pendente
-    const todosSync = valoresDoP.every(v => v.sincronizado === true);
-    return todosSync ? 'pronto' : 'pendente';
+    // Tem valores cadastrados = pronto (independente de sincronizado)
+    const temValorPositivo = valoresDoP.some(v => parseFloat(v.valor) > 0);
+    return temValorPositivo ? 'pronto' : 'pendente';
   };
 
   const temValores = (produto_id, vinculo_id) => getStatus(produto_id, vinculo_id) !== 'pendente';
