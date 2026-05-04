@@ -126,7 +126,7 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
         if (error) throw new Error(error.message);
         return { data: { data: data } };
       }
-      const { data, error } = await supabase.from("orcamento_itens").insert({ ...payloadLimpo, orcamento_id: id, empresa_id: empresaId }).select().single();
+      const { data, error } = await supabase.from("orcamento_itens").insert({ ...payloadLimpo, orcamento_id: id }).select().single();
       if (error) throw new Error(error.message);
       return { data: { data: [data] } };
     },
@@ -168,6 +168,56 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
       somaItensAdicionais = itensAdicionais.reduce((acc, item) => acc + (parseFloat(item.valor) || 0), 0);
     }
 
+    // Calcula custo_acabamento: busca os valores dos acabamentos via supabase
+    let custoAcabamento = 0;
+    const acabamentosIds = payload.acabamentos_ids || [];
+    if (acabamentosIds.length > 0) {
+      const { data: acbRows } = await supabase
+        .from("config_acabamentos")
+        .select("id, valor_acab_un")
+        .in("id", acabamentosIds)
+        .is("deleted_at", null);
+      if (acbRows) {
+        custoAcabamento = acbRows.reduce((acc, r) => acc + (parseFloat(r.valor_acab_un) || 0), 0);
+      }
+    }
+
+    // Calcula custo_personalizacao: derivado do JSONB de personalizações (valor já calculado no modal)
+    let custoPersonalizacao = 0;
+    const persJsonb = Array.isArray(payload.personalizacoes) ? payload.personalizacoes : [];
+    if (persJsonb.length > 0) {
+      // Busca configs para calcular custo correto
+      const persIds = persJsonb.map(p => p.id).filter(Boolean);
+      if (persIds.length > 0) {
+        const { data: persRows } = await supabase
+          .from("config_personalizacao")
+          .select("id, dependencias_pers, valor_pers_un")
+          .in("id", persIds)
+          .is("deleted_at", null);
+        if (persRows) {
+          for (const cfg of persRows) {
+            const input = persJsonb.find(p => String(p.id) === String(cfg.id));
+            if (!input) continue;
+            const dep = typeof cfg.dependencias_pers === "string"
+              ? (() => { try { return JSON.parse(cfg.dependencias_pers); } catch { return {}; } })()
+              : (cfg.dependencias_pers || {});
+            const valorUn = parseFloat(cfg.valor_pers_un) || 0;
+            const cores = dep.usa_cores ? (parseInt(input.cores) || 0) : 0;
+            const posicoes = dep.usa_posicoes ? (parseInt(input.posicoes) || 0) : 0;
+            const valorVariavel = dep.usa_valor_variavel ? (parseFloat(input.valor_variavel) || 0) : 0;
+            let valorFinal = valorVariavel;
+            if (dep.usa_valor_unitario) {
+              if (cores > 0 && posicoes > 0) valorFinal += cores * posicoes * valorUn;
+              else if (cores > 0) valorFinal += cores * valorUn;
+              else if (posicoes > 0) valorFinal += posicoes * valorUn;
+              else valorFinal += valorUn;
+            }
+            custoPersonalizacao += valorFinal;
+          }
+        }
+      }
+    }
+
     // Verifica se o orçamento já existe antes de tentar salvar
     if (!idLocal && garantirOrcamentoId) {
       try {
@@ -182,7 +232,13 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
     }
 
     const result = await salvarMutation.mutateAsync({ 
-      payload: { ...payload, soma_itens_adicionais: somaItensAdicionais }, 
+      payload: { 
+        ...payload, 
+        soma_itens_adicionais: somaItensAdicionais,
+        custo_acabamento: custoAcabamento,
+        custo_personalizacao: custoPersonalizacao,
+        soma_acab_itens: custoAcabamento + somaItensAdicionais,
+      }, 
       editId 
     });
 
