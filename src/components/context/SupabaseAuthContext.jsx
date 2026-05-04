@@ -18,16 +18,41 @@ export function SupabaseAuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [erpUsuario, setErpUsuario] = useState(null);
 
-  // Ref para evitar perda do erpUsuario entre re-renders e eventos assíncronos
+  // Refs para preservar valores durante suspensão de aba
   const erpUsuarioRef = useRef(null);
+  const sessionRef = useRef(null);
 
   const updateErpUsuario = (data) => {
     erpUsuarioRef.current = data;
     setErpUsuario(data);
   };
 
+  const updateSession = (sess) => {
+    sessionRef.current = sess;
+    setSession(sess);
+  };
+
   useEffect(() => {
     let cancelled = false;
+
+    // Tenta obter sessão válida, com fallback para refreshSession
+    async function getValidSession() {
+      const { data: { session: sess } } = await supabase.auth.getSession();
+      if (sess) return sess;
+
+      // Tenta renovar se não encontrou sessão diretamente
+      const { data: refreshData } = await supabase.auth.refreshSession();
+      return refreshData?.session || null;
+    }
+
+    async function loadErpUsuario(email) {
+      const data = await fetchErpUsuario(email);
+      if (data && !cancelled) {
+        updateErpUsuario(data);
+        console.log('[SupabaseAuth] erpUsuario carregado:', data.email, 'empresa_id:', data.empresa_id);
+      }
+      return data;
+    }
 
     async function init() {
       try {
@@ -47,21 +72,17 @@ export function SupabaseAuthProvider({ children }) {
           localStorage.removeItem('erp_sb_session_v2');
         }
 
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        const currentSession = await getValidSession();
 
         if (currentSession?.user) {
-          if (!cancelled) setSession(currentSession);
-          const data = await fetchErpUsuario(currentSession.user.email);
-          if (data && !cancelled) {
-            updateErpUsuario(data);
-            console.log('[SupabaseAuth] erpUsuario carregado:', data.email, 'empresa_id:', data.empresa_id);
-          }
+          if (!cancelled) updateSession(currentSession);
+          await loadErpUsuario(currentSession.user.email);
         } else {
-          if (!cancelled) setSession(null);
+          if (!cancelled) updateSession(null);
         }
       } catch (err) {
         console.warn('[SupabaseAuth] Erro ao inicializar:', err.message);
-        if (!cancelled) setSession(null);
+        if (!cancelled) updateSession(null);
       } finally {
         if (!cancelled) setReady(true);
       }
@@ -74,64 +95,63 @@ export function SupabaseAuthProvider({ children }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, sess) => {
       if (cancelled) return;
+      console.log('[SupabaseAuth] evento:', event, sess?.user?.email);
 
       if (event === 'SIGNED_OUT') {
-        setSession(null);
+        updateSession(null);
         updateErpUsuario(null);
+
       } else if (event === 'TOKEN_REFRESHED' && sess?.user) {
-        setSession(sess);
-        // Se erpUsuario foi perdido (ex: após suspend), recarrega
+        updateSession(sess);
+        // Restaura erpUsuario se foi perdido
         if (!erpUsuarioRef.current) {
-          const data = await fetchErpUsuario(sess.user.email);
-          if (data && !cancelled) {
-            updateErpUsuario(data);
-            console.log('[SupabaseAuth] erpUsuario restaurado após TOKEN_REFRESHED:', data.email);
-          }
+          await loadErpUsuario(sess.user.email);
         }
+
       } else if (event === 'SIGNED_IN' && sess?.user) {
-        setSession(sess);
-        const data = await fetchErpUsuario(sess.user.email);
-        if (data && !cancelled) {
-          updateErpUsuario(data);
-          console.log('[SupabaseAuth] erpUsuario atualizado via SIGNED_IN:', data.email, 'empresa_id:', data.empresa_id);
+        updateSession(sess);
+        // Só recarrega se não tiver erpUsuario OU se for outro email
+        const emailAtual = erpUsuarioRef.current?.email?.toLowerCase();
+        if (!erpUsuarioRef.current || emailAtual !== sess.user.email.toLowerCase()) {
+          await loadErpUsuario(sess.user.email);
         }
       }
     });
 
     init();
 
-    // Quando a aba volta ao foco, verifica sessão e restaura erpUsuario se necessário
+    // Restaura sessão e erpUsuario ao voltar para a aba
     const handleVisibilityChange = async () => {
       if (document.visibilityState !== 'visible' || cancelled) return;
-      try {
-        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
 
-        if (error || !currentSession) {
-          setSession(null);
-          updateErpUsuario(null);
+      try {
+        // Se já tem sessão e erpUsuario em memória, só verifica token
+        if (sessionRef.current && erpUsuarioRef.current) {
+          const expiresAt = sessionRef.current.expires_at * 1000;
+          if (expiresAt - Date.now() < 10 * 60 * 1000) {
+            supabase.auth.refreshSession(); // fire and forget
+          }
           return;
         }
 
-        // Atualiza sessão sem apagar erpUsuario
-        setSession(currentSession);
+        // Sessão ou erpUsuario perdidos — tenta restaurar
+        console.log('[SupabaseAuth] Restaurando sessão ao voltar para a aba...');
+        const currentSession = await getValidSession();
 
-        // Restaura erpUsuario se foi perdido durante a suspensão
-        if (!erpUsuarioRef.current && currentSession.user?.email) {
-          const data = await fetchErpUsuario(currentSession.user.email);
-          if (data && !cancelled) {
-            updateErpUsuario(data);
-            console.log('[SupabaseAuth] erpUsuario restaurado ao voltar para aba:', data.email);
-          }
+        if (!currentSession) {
+          // Nenhuma sessão disponível — mantém o que tem em ref para evitar logout desnecessário
+          // O listener onAuthStateChange irá tratar SIGNED_OUT se necessário
+          console.warn('[SupabaseAuth] Nenhuma sessão encontrada ao restaurar.');
+          return;
         }
 
-        // Renova token se próximo de expirar (menos de 10 min)
-        const expiresAt = currentSession.expires_at * 1000;
-        const tenMinutes = 10 * 60 * 1000;
-        if (expiresAt - Date.now() < tenMinutes) {
-          supabase.auth.refreshSession(); // fire and forget, o listener cuida do estado
+        if (!cancelled) updateSession(currentSession);
+
+        if (!erpUsuarioRef.current && currentSession.user?.email) {
+          await loadErpUsuario(currentSession.user.email);
         }
       } catch (err) {
-        console.warn('[SupabaseAuth] Erro ao verificar sessão na visibilidade:', err.message);
+        console.warn('[SupabaseAuth] Erro ao restaurar sessão:', err.message);
       }
     };
 
