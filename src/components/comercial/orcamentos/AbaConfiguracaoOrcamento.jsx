@@ -152,7 +152,7 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
-      qc.invalidateQueries(["orcamento-itens", idLocal]);
+      qc.refetchQueries({ queryKey: ["orcamento-itens", idLocal], exact: true });
       setDeleteTarget(null);
       toast.success("Item excluído com sucesso.");
     },
