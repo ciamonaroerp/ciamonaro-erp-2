@@ -783,6 +783,32 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
     return Number(itemEdicao?.soma_posicoes) || null;
   }, [personalizacoesSelecionadas, itemEdicao]);
 
+  // Salva apenas valor_unitario e subtotal (chamado da aba Valores)
+  const handleSalvarValores = async () => {
+    const valorUnitario = parseMoeda(form.valor_unitario);
+    const quantidade = parseInt(form.quantidade) || 1;
+    const subtotal = valorUnitario * quantidade;
+    const idItem = itemAtualizado?.id || itemEdicao?.id;
+    if (!idItem) return;
+    setSalvando(true);
+    try {
+      const { data, error } = await supabase
+        .from("orcamento_itens")
+        .update({ valor_unitario: valorUnitario, subtotal })
+        .eq("id", idItem)
+        .select()
+        .single();
+      if (error) throw error;
+      setItemAtualizado(data);
+      setForm(prev => ({ ...prev, valor_unitario: fmtMoeda(valorUnitario), subtotal: fmtMoeda(subtotal) }));
+      if (orcamentoId) invalidateOrcamentoItens(orcamentoId);
+    } catch (err) {
+      showError({ title: "Erro ao salvar valores", description: err.message });
+    } finally {
+      setSalvando(false);
+    }
+  };
+
   const handleSalvarEAtualizar = async () => {
     if (!validar()) return;
     setSalvando(true);
@@ -1245,8 +1271,18 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
                   </div>
                   <ComposicaoCustos item={itemAtualizado || itemEdicao} grupo={itemEdicao?._grupo} />
                   <ValoresItem item={itemAtualizado || itemEdicao} />
-                  <div className="flex justify-end pt-4 border-t mt-2">
-                    <Button variant="outline" onClick={onClose}>Fechar</Button>
+                  <div className="flex justify-end gap-2 pt-4 border-t mt-2">
+                    <Button variant="outline" onClick={onClose} disabled={salvando}>Fechar</Button>
+                    {parseMoeda(form.valor_unitario) > 0 && (
+                      <Button
+                        onClick={handleSalvarValores}
+                        disabled={salvando}
+                        style={{ background: "#3B5CCC" }}
+                        className="text-white min-w-[100px]"
+                      >
+                        {salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}
+                      </Button>
+                    )}
                   </div>
                 </>
               )}
