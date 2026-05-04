@@ -53,9 +53,9 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
 
   // Sincroniza prop orcamentoId → idLocal (cobre caso de edição onde prop chega depois)
   useEffect(() => {
-    if (orcamentoId) {
+    if (orcamentoId && orcamentoId !== idLocal) {
       setIdLocal(orcamentoId);
-      qc.removeQueries(["orcamento-itens", orcamentoId]);
+      qc.removeQueries({ queryKey: ["orcamento-itens", orcamentoId], exact: true });
     }
   }, [orcamentoId]);
 
@@ -131,8 +131,8 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
       if (error) throw new Error(error.message);
       return { data: { data: [data] } };
     },
-    onSuccess: (_, { editId }) => {
-      qc.invalidateQueries(["orcamento-itens", idLocal]);
+    onSuccess: async (_, { editId }) => {
+      await qc.refetchQueries({ queryKey: ["orcamento-itens", idLocal], exact: true });
       // Nunca fecha o modal automaticamente — o usuário vê a aba Valores e fecha manualmente
       toast.success(editId ? "Item atualizado com sucesso." : "Item adicionado com sucesso.");
     },
@@ -265,7 +265,7 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
   const fecharModal = () => {
     setModalTipo(null);
     setItemEdicao(null);
-    qc.invalidateQueries(["orcamento-itens", idLocal]);
+    qc.refetchQueries({ queryKey: ["orcamento-itens", idLocal], exact: true });
   };
 
   return (

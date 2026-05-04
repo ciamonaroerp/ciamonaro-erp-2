@@ -4,7 +4,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/components/lib/supabaseClient";
-import { useInvalidateOrcamentoItens } from "@/hooks/useOrcamentoItens";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -186,7 +185,7 @@ function ModalValorItemAdicional({ open, onClose, item, onSalvar }) {
 export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, proximaSequencia, tipo = "Produto", itemEdicao = null, orcamentoId }) {
   const isProdutoServico = tipo === "Produto e Serviço";
   const { showError } = useGlobalAlert();
-  const invalidateOrcamentoItens = useInvalidateOrcamentoItens();
+  const qc = useQueryClient();
 
   const [form, setForm] = useState({
     sequencia: proximaSequencia || 1,
@@ -801,7 +800,7 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
       if (error) throw error;
       setItemAtualizado(data);
       setForm(prev => ({ ...prev, valor_unitario: fmtMoeda(valorUnitario), subtotal: fmtMoeda(subtotal) }));
-      if (orcamentoId) invalidateOrcamentoItens(orcamentoId);
+      if (orcamentoId) await qc.refetchQueries({ queryKey: ["orcamento-itens", orcamentoId], exact: true });
     } catch (err) {
       showError({ title: "Erro ao salvar valores", description: err.message });
     } finally {
@@ -922,9 +921,9 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
       setItemDirty(false);
       setActiveTab("valores");
 
-      // 3️⃣ INVALIDA ITENS (React Query refetch automático)
+      // 3️⃣ REFETCH ITENS (força busca imediata com filtro deleted_at)
       if (orcamentoId) {
-        invalidateOrcamentoItens(orcamentoId);
+        await qc.refetchQueries({ queryKey: ["orcamento-itens", orcamentoId], exact: true });
       }
     } catch (err) {
       // Erros do garantirOrcamentoId (validação) já mostram toast em AbaConfiguracaoOrcamento
