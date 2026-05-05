@@ -313,10 +313,10 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
     staleTime: 30000,
   });
 
-  // Retorna o status persistido direto do produto_comercial.status_rendimento
-  const getStatus = (produto_id) => {
-    const produto = produtos.find(p => p.id === produto_id);
-    return produto?.status_rendimento || 'pendente';
+  // Retorna o status persistido do artigo (produto_comercial_artigo.status_rendimento)
+  const getStatus = (artigo_id) => {
+    const artigo = todosArtigos.find(a => a.id === artigo_id);
+    return artigo?.status_rendimento || 'pendente';
   };
 
   const temValores = (produto_id, vinculo_id) => getStatus(produto_id, vinculo_id) !== 'pendente';
@@ -410,11 +410,13 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
   const PRIORIDADE_STATUS = { pendente: 0, sincronizar: 1, pronto: 2 };
   const linhasOrdenadas = useMemo(() => {
     return [...linhasFiltradas].sort((a, b) => {
-      const sa = PRIORIDADE_STATUS[getStatus(a.produto.id)] ?? 2;
-      const sb = PRIORIDADE_STATUS[getStatus(b.produto.id)] ?? 2;
+      const artA = todosArtigos.find(art => art.produto_id === a.produto.id && art.vinculo_id === a.vinculo_id);
+      const artB = todosArtigos.find(art => art.produto_id === b.produto.id && art.vinculo_id === b.vinculo_id);
+      const sa = PRIORIDADE_STATUS[artA ? getStatus(artA.id) : 'pendente'] ?? 2;
+      const sb = PRIORIDADE_STATUS[artB ? getStatus(artB.id) : 'pendente'] ?? 2;
       return sa - sb;
     });
-  }, [linhasFiltradas, produtos]);
+  }, [linhasFiltradas, todosArtigos]);
 
   const totalPaginas = Math.max(1, Math.ceil(linhasOrdenadas.length / ITENS_POR_PAGINA));
   const paginaAtual = Math.min(pagina, totalPaginas);
@@ -429,13 +431,17 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
     );
   }
 
-  const allItems = linhasPagina.map(({ produto: p, vinculo_id, artigo_nome }) => ({
-    key: `${p.id}|${vinculo_id}`,
-    produto: p,
-    vinculo_id,
-    artigo_nome,
-    type: getStatus(p.id),
-  }));
+  const allItems = linhasPagina.map(({ produto: p, vinculo_id, artigo_nome }) => {
+    const artigoMatch = todosArtigos.find(a => a.produto_id === p.id && a.vinculo_id === vinculo_id);
+    return {
+      key: `${p.id}|${vinculo_id}`,
+      produto: p,
+      vinculo_id,
+      artigo_nome,
+      artigo_id: artigoMatch?.id,
+      type: artigoMatch ? getStatus(artigoMatch.id) : 'pendente',
+    };
+  });
 
   return (
     <TooltipProvider>
