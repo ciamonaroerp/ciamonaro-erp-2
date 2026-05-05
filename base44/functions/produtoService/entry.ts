@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
 
       if (error && error.code === '42501') {
         // Fallback: REST direto bypassando PostgREST RLS
-        const res = await fetch(`${supabaseUrl}/rest/v1/produto_comercial?empresa_id=eq.${empresa_id}&order=created_date.desc`, {
+        const res = await fetch(`${supabaseUrl}/rest/v1/produto_comercial?empresa_id=eq.${empresa_id}&order=codigo_produto.asc,created_date.desc`, {
           headers: {
             'apikey': serviceKey,
             'Authorization': `Bearer ${serviceKey}`,

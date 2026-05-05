@@ -17,12 +17,12 @@ Deno.serve(async (req) => {
 
     const data = res?.data?.data || [];
 
-    // Ordena por codigo, NULLs no final
+    // Ordena por codigo_produto, NULLs no final
     const sorted = data.sort((a, b) => {
-      if (!a.codigo && !b.codigo) return 0;
-      if (!a.codigo) return 1;
-      if (!b.codigo) return -1;
-      return a.codigo.localeCompare(b.codigo, 'pt-BR', { numeric: true });
+      if (!a.codigo_produto && !b.codigo_produto) return 0;
+      if (!a.codigo_produto) return 1;
+      if (!b.codigo_produto) return -1;
+      return a.codigo_produto.localeCompare(b.codigo_produto, 'pt-BR', { numeric: true });
     });
 
     return Response.json({ data: sorted });
