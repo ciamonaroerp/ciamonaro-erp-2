@@ -215,18 +215,17 @@ export default function ProdutoComercialPage() {
   });
 
   const composicoesQuery = useQuery({
-    queryKey: ["produto-composicao", editingId, empresa_id],
+    queryKey: ["produto-composicao", editingId],
     queryFn: async () => {
-      if (!editingId || !empresa_id) return [];
+      if (!editingId) return [];
       const { data, error } = await supabase
         .from('produto_composicao')
         .select('*')
-        .eq('produto_id', editingId)
-        .eq('empresa_id', empresa_id);
+        .eq('produto_id', editingId);
       console.log('[composicoesQuery] data:', data, 'error:', error);
       return data || [];
     },
-    enabled: !!editingId && !!modalOpen && !!empresa_id,
+    enabled: !!editingId && !!modalOpen,
     staleTime: 0,
   });
 
@@ -344,7 +343,7 @@ export default function ProdutoComercialPage() {
       }
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["produto-composicao", editingId] });
+      qc.invalidateQueries({ queryKey: ["produto-composicao"] });
     },
     onError: (e) => showError({ title: "Erro ao salvar composições", description: e.message }),
   });
