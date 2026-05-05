@@ -314,28 +314,32 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
   });
 
   // Retorna: 'pendente' | 'pronto'
-  // Pendente se: sem valores para este vinculo_id, ou se qualquer rendimento obrigatório for zero
+  // Pendente se qualquer rendimento obrigatório da composição tiver valor 0 ou ausente para este item
   const getStatus = (produto_id, vinculo_id) => {
     const vid = vinculo_id || '';
-    // Filtra valores EXCLUSIVAMENTE para este produto + vinculo_id
-    const valoresDoItem = valores.filter(v => {
-      if (v.produto_id !== produto_id || v.deleted_at) return false;
-      return (v.vinculo_id || '') === vid;
-    });
 
-    // Verifica se todos os rendimentos vinculados à composição têm valor > 0
     const grupo = getComposicoesDoProduto(produto_id);
     const ridsObrigatorios = Object.values(grupo).flat().filter(rid => !!rendimentosMap[rid]);
 
-    if (ridsObrigatorios.length === 0) {
-      return valoresDoItem.some(v => parseFloat(v.valor) > 0) ? 'pronto' : 'pendente';
-    }
+    if (ridsObrigatorios.length === 0) return 'pendente';
 
-    // Pendente se qualquer rendimento da composição tiver valor 0 ou ausente para este vinculo_id
     const temZero = ridsObrigatorios.some(rid => {
-      const v = valoresDoItem.find(val => val.rendimento_id === rid);
-      return !v || parseFloat(v.valor) === 0;
+      // Tenta encontrar o valor pelo vinculo_id exato primeiro
+      const chaveExata = `${rid}|${produto_id}|${vid}`;
+      const valorExato = valoresMap[chaveExata];
+      if (valorExato != null && parseFloat(valorExato) > 0) return false;
+
+      // Fallback: verifica se existe qualquer valor > 0 para este rendimento+produto
+      // (cobre casos onde vinculo_id foi salvo diferente do esperado)
+      const temValorQualquer = valores.some(v =>
+        v.rendimento_id === rid &&
+        v.produto_id === produto_id &&
+        !v.deleted_at &&
+        parseFloat(v.valor) > 0
+      );
+      return !temValorQualquer;
     });
+
     return temZero ? 'pendente' : 'pronto';
   };
 
