@@ -448,6 +448,9 @@ export default function ProdutoComercialPage() {
 
         await qc.invalidateQueries({ queryKey: ["produto-comercial", empresa_id] });
         await qc.invalidateQueries({ queryKey: ["tabela-precos-sync-produto", editingId] });
+        
+        // Força reload dos dados de preços
+        qc.refetchQueries({ queryKey: ["tabela-precos-sync-produto", editingId] });
         closeModal();
       } else {
         const { variáveis: _v2, ...dadosCriar } = formData;
