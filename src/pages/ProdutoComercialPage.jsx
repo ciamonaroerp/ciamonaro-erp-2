@@ -27,7 +27,7 @@ async function fetchProdutos(empresa_id) {
     .select('*')
     .eq('empresa_id', empresa_id)
     .is('deleted_at', null)
-    .order('codigo', { ascending: true });
+    .order('codigo_produto', { ascending: true });
   return data || [];
 }
 
@@ -295,7 +295,7 @@ export default function ProdutoComercialPage() {
       result = result.filter(p =>
         p.nome_produto?.toLowerCase().includes(t) ||
         p.descricao?.toLowerCase().includes(t) ||
-        p.codigo?.toLowerCase().includes(t)
+        p.codigo_produto?.toLowerCase().includes(t)
       );
     }
     return result;
