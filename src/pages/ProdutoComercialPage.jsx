@@ -144,6 +144,32 @@ export default function ProdutoComercialPage() {
     staleTime: 60000,
   });
 
+  // Busca todos os preços para calcular status "Pendente" na listagem
+  const { data: todosPrecosSync = [] } = useQuery({
+    queryKey: ["tabela-precos-sync-all", empresa_id],
+    queryFn: async () => {
+      if (!empresa_id) return [];
+      const { data } = await supabase
+        .from('tabela_precos_sync')
+        .select('produto_id, consumo_un, custo_kg')
+        .eq('empresa_id', empresa_id);
+      return data || [];
+    },
+    enabled: !!empresa_id,
+    staleTime: 30000,
+  });
+
+  // Set de produto_ids que têm algum item com consumo_un=0 ou custo_kg=0
+  const produtosComPendencia = useMemo(() => {
+    const set = new Set();
+    todosPrecosSync.forEach(p => {
+      if ((parseFloat(p.consumo_un) || 0) === 0 || (parseFloat(p.custo_kg) || 0) === 0) {
+        set.add(p.produto_id);
+      }
+    });
+    return set;
+  }, [todosPrecosSync]);
+
   const { data: artigos = [] } = useQuery({
     queryKey: ["produto-comercial-artigos", editingId],
     queryFn: () => fetchArtigos(editingId),
@@ -503,10 +529,17 @@ export default function ProdutoComercialPage() {
                     <td className="px-4 py-3 font-medium">{p.nome_produto}</td>
                     <td className="px-4 py-3 text-slate-600 text-xs">{p.descricao || "-"}</td>
                     <td className="px-4 py-3">
-                      <span className={cn("px-2 py-1 rounded text-xs font-medium",
-                        p.status === "Ativo" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
-                        {p.status}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className={cn("px-2 py-1 rounded text-xs font-medium w-fit",
+                          p.status === "Ativo" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
+                          {p.status}
+                        </span>
+                        {produtosComPendencia.has(p.id) && (
+                          <span className="px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-700 w-fit">
+                            Pendente
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-slate-500 text-xs">
                       {p.created_date ? new Date(p.created_date).toLocaleDateString('pt-BR') : "-"}
