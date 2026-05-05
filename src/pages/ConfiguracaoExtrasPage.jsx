@@ -193,7 +193,7 @@ export default function ConfiguracaoExtrasPage() {
   // ── Estado Tamanhos ──
   const [tamanhoModal, setTamanhoModal] = useState(false);
   const [tamanhoEditingId, setTamanhoEditingId] = useState(null);
-  const [tamanhoForm, setTamanhoForm] = useState({ tamanho_abreviado: "", descricao: "" });
+  const [tamanhoForm, setTamanhoForm] = useState({ tamanho_abreviado: "", descricao: "", categoria: "" });
 
   // ── Estado Estamparia ──
   const [estampariaModal, setEstampariaModal] = useState(false);
@@ -535,10 +535,10 @@ export default function ConfiguracaoExtrasPage() {
   const handleTamanhoOpen = (item = null) => {
     if (item) {
       setTamanhoEditingId(item.id);
-      setTamanhoForm({ tamanho_abreviado: item.tamanho_abreviado || "", descricao: item.descricao || "" });
+      setTamanhoForm({ tamanho_abreviado: item.tamanho_abreviado || "", descricao: item.descricao || "", categoria: item.categoria || "" });
     } else {
       setTamanhoEditingId(null);
-      setTamanhoForm({ tamanho_abreviado: "", descricao: "" });
+      setTamanhoForm({ tamanho_abreviado: "", descricao: "", categoria: "" });
     }
     setTamanhoModal(true);
   };
@@ -558,6 +558,7 @@ export default function ConfiguracaoExtrasPage() {
         await atualizar("config_tamanhos", tamanhoEditingId, {
           tamanho_abreviado: tamanhoForm.tamanho_abreviado.trim().toUpperCase(),
           descricao: tamanhoForm.descricao.trim(),
+          categoria: tamanhoForm.categoria || null,
           updated_at: new Date().toISOString(),
         });
         showSuccess({ title: "Atualizado", description: "Tamanho atualizado com sucesso." });
@@ -566,6 +567,7 @@ export default function ConfiguracaoExtrasPage() {
           codigo: gerarCodigoTamanho(tamanhos),
           tamanho_abreviado: tamanhoForm.tamanho_abreviado.trim().toUpperCase(),
           descricao: tamanhoForm.descricao.trim(),
+          categoria: tamanhoForm.categoria || null,
           created_at: new Date().toISOString(),
         });
         showSuccess({ title: "Sucesso", description: "Tamanho adicionado com sucesso." });
@@ -573,7 +575,7 @@ export default function ConfiguracaoExtrasPage() {
       queryClient.invalidateQueries({ queryKey: ["config-extras-tamanhos"] });
       setTamanhoModal(false);
       setTamanhoEditingId(null);
-      setTamanhoForm({ tamanho_abreviado: "", descricao: "" });
+      setTamanhoForm({ tamanho_abreviado: "", descricao: "", categoria: "" });
     } catch (err) {
       showError({ title: "Erro ao salvar", description: err.message });
     }
@@ -892,6 +894,7 @@ export default function ConfiguracaoExtrasPage() {
             colunas={[
               { key: "codigo", label: "Código", mono: true },
               { key: "tamanho_abreviado", label: "Tamanho Abreviado" },
+              { key: "categoria", label: "Categoria", muted: true },
               { key: "descricao", label: "Descrição", muted: true },
               {
                 key: "updated_at",
@@ -939,6 +942,19 @@ export default function ConfiguracaoExtrasPage() {
               />
             </div>
             <div>
+              <label className="text-sm font-medium">Categoria</label>
+              <select
+                value={tamanhoForm.categoria}
+                onChange={e => setTamanhoForm(p => ({ ...p, categoria: e.target.value }))}
+                className="mt-1 w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">Selecione...</option>
+                <option value="Infantil">Infantil</option>
+                <option value="Juvenil">Juvenil</option>
+                <option value="Adulto">Adulto</option>
+              </select>
+            </div>
+            <div>
               <label className="text-sm font-medium">Descrição *</label>
               <Input
                 value={tamanhoForm.descricao}
@@ -949,7 +965,7 @@ export default function ConfiguracaoExtrasPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setTamanhoModal(false); setTamanhoEditingId(null); setTamanhoForm({ tamanho_abreviado: "", descricao: "" }); }} disabled={saving}>
+            <Button variant="outline" onClick={() => { setTamanhoModal(false); setTamanhoEditingId(null); setTamanhoForm({ tamanho_abreviado: "", descricao: "", categoria: "" }); }} disabled={saving}>
               Cancelar
             </Button>
             <Button onClick={handleTamanhoSave} className="bg-blue-600 hover:bg-blue-700" disabled={saving}>
