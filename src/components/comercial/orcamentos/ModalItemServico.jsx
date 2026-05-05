@@ -430,9 +430,20 @@ export default function ModalItemServico({ open, onClose, onSalvar, empresaId, p
         };
       }).filter(Boolean);
 
+      // Captura usuario_id do usuário logado
+      let usuario_id = null;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.id) {
+          const { data: erpUser } = await supabase.from("erp_usuarios").select("id").eq("email", user.email).maybeSingle();
+          usuario_id = erpUser?.id || null;
+        }
+      } catch { /* ignora erro — salva sem usuario_id */ }
+
       const payload = {
         sequencia: parseInt(form.sequencia),
         tipo_item: "Serviço",
+        usuario_id,
         quantidade,
         observacoes: form.observacoes || null,
         valor_unitario: valorUnitario,
