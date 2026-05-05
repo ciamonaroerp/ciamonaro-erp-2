@@ -574,10 +574,10 @@ export default function ProdutoComercialPage() {
                       type="button"
                       onClick={() => toggleCategoria(cat)}
                       className={cn(
-                        "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all select-none",
+                        "flex items-center gap-1.5 px-2.5 py-1 rounded border text-xs font-medium transition-all select-none",
                         sel
                           ? "bg-blue-600 border-blue-600 text-white"
-                          : "bg-white border-slate-300 text-slate-700 hover:border-blue-400 hover:bg-blue-50"
+                          : "bg-white border-slate-300 text-slate-600 hover:border-blue-400 hover:bg-blue-50"
                       )}
                     >
                       {sel && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
