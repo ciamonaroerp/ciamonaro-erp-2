@@ -314,33 +314,32 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
   });
 
   // Retorna: 'pendente' | 'pronto'
-  // Pendente se qualquer rendimento obrigatório da composição tiver valor 0 ou ausente para este vinculo_id
+  // Pronto se TODOS os rendimentos de PELO MENOS UMA variável (variavel_index) estiverem preenchidos > 0
   const getStatus = (produto_id, vinculo_id) => {
     const vid = vinculo_id || '';
 
-    const grupo = getComposicoesDoProduto(produto_id);
-    const ridsObrigatorios = Object.values(grupo).flat().filter(rid => !!rendimentosMap[rid]);
+    const grupo = getComposicoesDoProduto(produto_id); // { variavel_index: [rid, rid, ...] }
+    const variaveis = Object.keys(grupo);
+    if (variaveis.length === 0) return 'pendente';
 
-    if (ridsObrigatorios.length === 0) return 'pendente';
-
-    // Busca valores deste produto filtrados pelo vinculo_id exato
-    // Se não houver nenhum valor salvo com este vinculo_id, tenta também com vinculo_id null/vazio
-    // (compatibilidade com registros antigos salvos antes de vinculo_id existir)
     const valoresDoProduto = valores.filter(v => v.produto_id === produto_id && !v.deleted_at);
+    // Determina qual conjunto usar: valores com vinculo_id exato, ou legados (null)
     const temRegistroComVinculo = valoresDoProduto.some(v => (v.vinculo_id || '') === vid);
+    const valoresDoItem = temRegistroComVinculo
+      ? valoresDoProduto.filter(v => (v.vinculo_id || '') === vid)
+      : valoresDoProduto.filter(v => !v.vinculo_id);
 
-    const temZero = ridsObrigatorios.some(rid => {
-      // Se existem registros com este vinculo_id, verifica apenas esses
-      if (temRegistroComVinculo) {
-        const v = valoresDoProduto.find(val => val.rendimento_id === rid && (val.vinculo_id || '') === vid);
-        return !v || parseFloat(v.valor) === 0;
-      }
-      // Sem registros com este vinculo_id: verifica registros com vinculo_id null (registros legados)
-      const v = valoresDoProduto.find(val => val.rendimento_id === rid && !val.vinculo_id);
-      return !v || parseFloat(v.valor) === 0;
+    // "Pronto" se pelo menos uma variável tem TODOS os seus rendimentos com valor > 0
+    const algumVariavelCompleta = variaveis.some(idx => {
+      const rids = grupo[idx].filter(rid => !!rendimentosMap[rid]);
+      if (rids.length === 0) return false;
+      return rids.every(rid => {
+        const v = valoresDoItem.find(val => val.rendimento_id === rid);
+        return v && parseFloat(v.valor) > 0;
+      });
     });
 
-    return temZero ? 'pendente' : 'pronto';
+    return algumVariavelCompleta ? 'pronto' : 'pendente';
   };
 
   const temValores = (produto_id, vinculo_id) => getStatus(produto_id, vinculo_id) !== 'pendente';
