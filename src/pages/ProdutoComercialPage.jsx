@@ -430,12 +430,12 @@ export default function ProdutoComercialPage() {
         // Salva consumo e custo diretamente na tabela_precos_sync
         if (artigosParaSalvar.length > 0) {
           for (const a of artigosParaSalvar) {
-            await supabase
+            const { error } = await supabase
               .from('tabela_precos_sync')
               .update({ consumo_un: a.consumo_un, custo_kg: a.custo_kg })
               .eq('codigo_unico', a.codigo_unico)
-              .eq('empresa_id', empresa_id)
-              .catch(err => console.warn('Aviso ao salvar consumo/custo:', err.message));
+              .eq('empresa_id', empresa_id);
+            if (error) console.warn('Erro ao salvar consumo/custo:', error.message);
           }
         }
 
@@ -450,6 +450,7 @@ export default function ProdutoComercialPage() {
         }
 
         await qc.invalidateQueries({ queryKey: ["produto-comercial", empresa_id] });
+        await qc.invalidateQueries({ queryKey: ["tabela-precos-sync-produto", editingId] });
         closeModal();
       } else {
         const { variáveis: _v2, ...dadosCriar } = formData;
