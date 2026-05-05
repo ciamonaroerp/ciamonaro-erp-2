@@ -196,13 +196,13 @@ export default function ProdutoComercialPage() {
   // (init_produto_composicao removido — tabelas criadas via migration)
 
   // Carrega dados de custo/consumo das composições diretamente da tabela_precos_sync
-  const { data: precosExistentes = [] } = useQuery({
+  const { data: artigosPrecosSync = [] } = useQuery({
     queryKey: ["tabela-precos-sync-produto", editingId],
     queryFn: async () => {
       if (!editingId) return [];
       const { data } = await supabase
         .from('tabela_precos_sync')
-        .select('codigo_unico, consumo_un, custo_kg, custo_un, rendimento_valor')
+        .select('codigo_unico, artigo_nome, cor_nome, linha_nome, consumo_un, custo_kg, custo_un, rendimento_valor')
         .eq('produto_id', editingId);
       return data || [];
     },
@@ -210,28 +210,25 @@ export default function ProdutoComercialPage() {
     staleTime: 0,
   });
 
-  // Inicializa multiComposicoes combinando artigos + tabela_precos_sync
+  // Inicializa multiComposicoes a partir da tabela_precos_sync
   useEffect(() => {
     const numVar = parseInt(formData.variáveis) || 1;
-    if (editingId) {
-      const existentes = artigos.map(a => {
-        const preco = precosExistentes.find(p => p.codigo_unico === a.codigo_unico);
-        return {
-          indice: parseInt(a.variavel_index) || 1,
-          codigo_unico: a.codigo_unico,
-          artigo_nome: a.artigo_nome,
-          cor_nome: a.cor_nome,
-          artigo_codigo: a.artigo_codigo,
-          consumo_un: preco?.consumo_un || "",
-          custo_kg: preco?.custo_kg || "",
-          custo_un: preco?.custo_un || "",
-        };
-      });
+    if (editingId && artigosPrecosSync.length > 0) {
+      const existentes = artigosPrecosSync.map(p => ({
+        indice: 1,
+        codigo_unico: p.codigo_unico,
+        artigo_nome: p.artigo_nome,
+        cor_nome: p.cor_nome,
+        linha_nome: p.linha_nome,
+        consumo_un: p.consumo_un || "",
+        custo_kg: p.custo_kg || "",
+        custo_un: p.custo_un || "",
+      }));
       initMultiComposicoes(numVar, existentes);
-    } else {
+    } else if (editingId) {
       initMultiComposicoes(numVar, []);
     }
-  }, [editingId, modalOpen, artigos, precosExistentes, formData.variáveis]);
+  }, [editingId, modalOpen, artigosPrecosSync, formData.variáveis]);
 
   const { data: todasComposicoes = [] } = useQuery({
     queryKey: ["produto-rendimentos", empresa_id],
@@ -821,64 +818,61 @@ export default function ProdutoComercialPage() {
             )}
 
             {/* Custo e Consumo - para todos os produtos */}
-            {editingId && artigos.length > 0 && parseInt(formData.variáveis) === 1 && (
+            {editingId && artigosPrecosSync.length > 0 && parseInt(formData.variáveis) === 1 && (
               <div>
                 <label className="text-sm font-medium text-slate-900 block mb-2">Custo e Consumo</label>
                 <div className="border border-slate-200 rounded-lg p-3 space-y-2 bg-slate-50/40">
-                  {artigosComDetalhes.map((a, idx) => {
-                    const preco = precosExistentes.find(p => p.codigo_unico === a.codigo_unico);
-                    return (
-                      <div key={a.id} className="grid gap-3 p-2 bg-white rounded border border-slate-200" style={{ gridTemplateColumns: '1fr 90px 90px 90px' }}>
-                        <div>
-                          <span className="text-xs font-semibold text-slate-700 block">{a.codigo_unico} • {a.artigo_nome}</span>
-                          <span className="text-xs text-slate-500">{[a.cor_nome, a.linha_nome].filter(Boolean).join(' • ') || '—'}</span>
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-slate-600 block mb-1">Consumo (un)</label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={(multiComposicoes.find(c => c.codigo_unico === a.codigo_unico)?.consumo_un) || (preco?.consumo_un || '')}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              const cmp = multiComposicoes.find(c => c.codigo_unico === a.codigo_unico);
-                              if (cmp) cmp.consumo_un = val;
-                              setMultiComposicoes([...multiComposicoes]);
-                            }}
-                            className="w-full px-2 py-1 text-xs border border-slate-200 rounded"
-                            placeholder="0.00"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-slate-600 block mb-1">Custo (kg)</label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={(multiComposicoes.find(c => c.codigo_unico === a.codigo_unico)?.custo_kg) || (preco?.custo_kg || '')}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              const cmp = multiComposicoes.find(c => c.codigo_unico === a.codigo_unico);
-                              if (cmp) cmp.custo_kg = val;
-                              setMultiComposicoes([...multiComposicoes]);
-                            }}
-                            className="w-full px-2 py-1 text-xs border border-slate-200 rounded"
-                            placeholder="0.00"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-slate-600 block mb-1">Custo (un)</label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={preco?.custo_un || ''}
-                            readOnly
-                            className="w-full px-2 py-1 text-xs border border-slate-200 rounded bg-slate-100"
-                            placeholder="0.00"
-                          />
-                        </div>
+                  {artigosPrecosSync.map((a) => (
+                    <div key={a.codigo_unico} className="grid gap-3 p-2 bg-white rounded border border-slate-200" style={{ gridTemplateColumns: '1fr 90px 90px 90px' }}>
+                      <div>
+                        <span className="text-xs font-semibold text-slate-700 block">{a.codigo_unico} • {a.artigo_nome}</span>
+                        <span className="text-xs text-slate-500">{[a.cor_nome, a.linha_nome].filter(Boolean).join(' • ') || '—'}</span>
                       </div>
-                    );
-                  })}
+                      <div>
+                        <label className="text-xs font-medium text-slate-600 block mb-1">Consumo (un)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={(multiComposicoes.find(c => c.codigo_unico === a.codigo_unico)?.consumo_un) || a.consumo_un || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const cmp = multiComposicoes.find(c => c.codigo_unico === a.codigo_unico);
+                            if (cmp) cmp.consumo_un = val;
+                            setMultiComposicoes([...multiComposicoes]);
+                          }}
+                          className="w-full px-2 py-1 text-xs border border-slate-200 rounded"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-slate-600 block mb-1">Custo (kg)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={(multiComposicoes.find(c => c.codigo_unico === a.codigo_unico)?.custo_kg) || a.custo_kg || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const cmp = multiComposicoes.find(c => c.codigo_unico === a.codigo_unico);
+                            if (cmp) cmp.custo_kg = val;
+                            setMultiComposicoes([...multiComposicoes]);
+                          }}
+                          className="w-full px-2 py-1 text-xs border border-slate-200 rounded"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-slate-600 block mb-1">Custo (un)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={a.custo_un || ''}
+                          readOnly
+                          className="w-full px-2 py-1 text-xs border border-slate-200 rounded bg-slate-100"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
