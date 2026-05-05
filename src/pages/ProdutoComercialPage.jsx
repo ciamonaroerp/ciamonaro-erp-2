@@ -210,6 +210,16 @@ export default function ProdutoComercialPage() {
     staleTime: 0,
   });
 
+  // Refetch dos preços quando abre modal ou muda produto
+  useEffect(() => {
+    if (editingId && modalOpen) {
+      const timer = setTimeout(() => {
+        qc.invalidateQueries({ queryKey: ["tabela-precos-sync-produto", editingId] });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [editingId, modalOpen, qc]);
+
   // Inicializa multiComposicoes a partir da tabela_precos_sync
   useEffect(() => {
     const numVar = parseInt(formData.variáveis) || 1;
