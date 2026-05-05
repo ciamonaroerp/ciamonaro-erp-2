@@ -196,6 +196,7 @@ export default function ProdutoComercialPage() {
   // (init_produto_composicao removido — tabelas criadas via migration)
 
   // Carrega dados de custo/consumo das composições diretamente da tabela_precos_sync
+  // Filtrado apenas pelos artigos vinculados (produto_comercial_artigo)
   const { data: artigosPrecosSync = [] } = useQuery({
     queryKey: ["tabela-precos-sync-produto", editingId],
     queryFn: async () => {
@@ -209,6 +210,12 @@ export default function ProdutoComercialPage() {
     enabled: !!editingId && !!modalOpen,
     staleTime: 0,
   });
+
+  // Filtra artigosPrecosSync apenas pelos artigos efetivamente selecionados (vinculados)
+  const artigosPrecosFiltered = useMemo(() => {
+    const codigosVinculados = new Set(artigos.map(a => a.codigo_unico).filter(Boolean));
+    return artigosPrecosSync.filter(a => codigosVinculados.has(a.codigo_unico));
+  }, [artigosPrecosSync, artigos]);
 
   // Refetch dos preços quando abre modal ou muda produto
   useEffect(() => {
@@ -830,12 +837,12 @@ export default function ProdutoComercialPage() {
               </div>
             )}
 
-            {/* Custo e Consumo - para todos os produtos */}
-            {editingId && artigosPrecosSync.length > 0 && (
+            {/* Custo e Consumo - apenas dos artigos selecionados */}
+            {editingId && artigosPrecosFiltered.length > 0 && (
               <div>
                 <label className="text-sm font-medium text-slate-900 block mb-2">Custo e Consumo</label>
                 <div className="border border-slate-200 rounded-lg p-3 space-y-2 bg-slate-50/40">
-                  {artigosPrecosSync.map((a) => (
+                  {artigosPrecosFiltered.map((a) => (
                     <div key={a.codigo_unico} className="grid gap-3 p-2 bg-white rounded border border-slate-200" style={{ gridTemplateColumns: '1fr 90px 90px 90px' }}>
                       <div>
                         <span className="text-xs font-semibold text-slate-700 block">{a.codigo_unico} • {a.artigo_nome}</span>
