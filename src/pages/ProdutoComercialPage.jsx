@@ -818,7 +818,7 @@ export default function ProdutoComercialPage() {
             )}
 
             {/* Custo e Consumo - para todos os produtos */}
-            {editingId && artigosPrecosSync.length > 0 && parseInt(formData.variáveis) === 1 && (
+            {editingId && artigosPrecosSync.length > 0 && (
               <div>
                 <label className="text-sm font-medium text-slate-900 block mb-2">Custo e Consumo</label>
                 <div className="border border-slate-200 rounded-lg p-3 space-y-2 bg-slate-50/40">
