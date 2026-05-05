@@ -227,11 +227,11 @@ export default function ProdutoComercialPage() {
     }
   }, [editingId, modalOpen, qc]);
 
-  // Inicializa multiComposicoes a partir da tabela_precos_sync
+  // Inicializa multiComposicoes a partir dos artigos selecionados (filtrados)
   useEffect(() => {
     const numVar = parseInt(formData.variáveis) || 1;
-    if (editingId && artigosPrecosSync.length > 0) {
-      const existentes = artigosPrecosSync.map(p => ({
+    if (editingId && artigosPrecosFiltered.length > 0) {
+      const existentes = artigosPrecosFiltered.map(p => ({
         indice: 1,
         codigo_unico: p.codigo_unico,
         artigo_nome: p.artigo_nome,
@@ -245,7 +245,7 @@ export default function ProdutoComercialPage() {
     } else if (editingId) {
       initMultiComposicoes(numVar, []);
     }
-  }, [editingId, modalOpen, artigosPrecosSync, formData.variáveis]);
+  }, [editingId, modalOpen, artigosPrecosFiltered, formData.variáveis]);
 
   const { data: todasComposicoes = [] } = useQuery({
     queryKey: ["produto-rendimentos", empresa_id],
