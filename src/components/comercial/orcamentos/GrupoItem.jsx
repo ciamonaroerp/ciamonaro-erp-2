@@ -224,7 +224,7 @@ export default function GrupoItem({ grupo, onEditar, onExcluir, readOnly = false
 
       {/* RATEIO: só para Produto e Serviço, FORA DO GRID */}
       {isProdutoServico && (
-        <div className="pl-[166px] pr-3 py-2 bg-slate-50 border-t border-slate-100 flex gap-6 text-[11px]">
+        <div className="pl-[166px] pr-3 py-2 bg-slate-50 border-t border-slate-100 flex flex-wrap gap-x-6 gap-y-1 text-[11px]">
           <span className="text-slate-500">
             <span className="font-medium text-blue-600">Produto ({primeiro.produto_percentual}%): </span>
             {primeiro.quantidade} × R$ {fmtMoeda(vlrProduto)} = <strong>R$ {fmtMoeda(primeiro.quantidade * vlrProduto)}</strong>
@@ -234,6 +234,21 @@ export default function GrupoItem({ grupo, onEditar, onExcluir, readOnly = false
             <span className="font-medium text-purple-600">Serviço ({primeiro.servico_percentual}%): </span>
             {primeiro.quantidade} × R$ {fmtMoeda(vlrServico)} = <strong>R$ {fmtMoeda(primeiro.quantidade * vlrServico)}</strong>
           </span>
+          {hasPersonalizacoes && (
+            <>
+              <span className="text-slate-400">|</span>
+              <span className="text-slate-500">
+                <span className="font-medium text-slate-600">Personalização: </span>
+                {primeiro.personalizacoes.map(p => {
+                  const desc = p?.descricao || p?.tipo_personalizacao || String(p);
+                  const partes = [];
+                  if (p?.cores) partes.push(`${p.cores} cor${p.cores > 1 ? 'es' : ''}`);
+                  if (p?.posicoes) partes.push(`${p.posicoes} posição${p.posicoes > 1 ? 'ões' : ''}`);
+                  return partes.length > 0 ? `${desc} (${partes.join(", ")})` : desc;
+                }).join(" | ")}
+              </span>
+            </>
+          )}
         </div>
       )}
     </div>
