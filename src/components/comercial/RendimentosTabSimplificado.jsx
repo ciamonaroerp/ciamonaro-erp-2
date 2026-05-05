@@ -521,7 +521,7 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
                         </Tooltip>
                       ) : null}
                     </td>
-                    <td className="px-4 py-3 font-mono font-semibold text-blue-700">{p.codigo || "—"}</td>
+                    <td className="px-4 py-3 font-mono font-semibold text-blue-700">{p.codigo_produto || "—"}</td>
                     <td className="px-4 py-3 font-medium">{p.nome_produto}</td>
                     <td className="px-4 py-3 text-slate-600 text-sm">{artigo_nome || <span className="text-slate-400">—</span>}</td>
                     <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{formatSinc(ultimaSincMap[p.id])}</td>
