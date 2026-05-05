@@ -56,11 +56,11 @@ async function fetchVinculos(empresa_id) {
   }));
 }
 
-async function createProduto(empresa_id, payload) {
+async function createProduto(empresa_id, payload, createdBy) {
   if (!empresa_id) throw new Error('Empresa ID obrigatório');
   const { data, error } = await supabase
     .from('produto_comercial')
-    .insert({ ...payload, empresa_id })
+    .insert({ ...payload, empresa_id, created_by: createdBy })
     .select()
     .single();
   if (error) throw new Error(error.message);
@@ -85,12 +85,13 @@ async function deleteProduto(id) {
     .eq('id', id);
 }
 
-async function createArtigo(empresa_id, produto_id, artigoData) {
+async function createArtigo(empresa_id, produto_id, artigoData, createdBy) {
   const { data, error } = await supabase
     .from('produto_comercial_artigo')
     .insert({
       produto_id,
       empresa_id,
+      created_by: createdBy,
       vinculo_id: artigoData.vinculo_id,
       codigo_unico: artigoData.codigo_unico,
       artigo_codigo: artigoData.artigo_codigo || null,
@@ -120,6 +121,7 @@ export default function ProdutoComercialPage() {
   const { empresa_id } = useEmpresa();
   const qc = useQueryClient();
   const { showError, showDelete, showSuccess } = useGlobalAlert();
+  const [userEmail, setUserEmail] = React.useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [formData, setFormData] = useState(EMPTY);
@@ -130,6 +132,14 @@ export default function ProdutoComercialPage() {
   const [composicaoSearch, setComposicaoSearch] = useState("");
   const [itemsPendentes, setItemsPendentes] = useState(false);
   const [multiComposicoes, setMultiComposicoes] = useState([]);
+
+  React.useEffect(() => {
+    const getUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data?.user?.email) setUserEmail(data.user.email);
+    };
+    getUser();
+  }, []);
 
   const initMultiComposicoes = (numVariaveis, existentes = []) => {
     const arr = Array.from({ length: numVariaveis }, (_, i) => {
@@ -313,7 +323,7 @@ export default function ProdutoComercialPage() {
   );
 
   const criarMutation = useMutation({
-    mutationFn: (d) => createProduto(empresa_id, d),
+    mutationFn: (d) => createProduto(empresa_id, d, userEmail),
     onSuccess: () => {
       qc.invalidateQueries(["produto-comercial"]);
       closeModal();
@@ -337,7 +347,7 @@ export default function ProdutoComercialPage() {
   });
 
   const addArtigoMutation = useMutation({
-    mutationFn: (artigoData) => createArtigo(empresa_id, editingId, artigoData),
+    mutationFn: (artigoData) => createArtigo(empresa_id, editingId, artigoData, userEmail),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["produto-comercial-artigos", editingId] });
       setVinculoSearchPorVar({});
