@@ -298,19 +298,18 @@ function renderGrupoPDF(primeiro, itensOrdenados) {
       }
 
       rateioRow = `
-        <div style="margin-top:4px;display:flex;gap:16px;font-size:11px;color:#374151;flex-wrap:wrap">
-          <span><strong>Produto (${primeiro.produto_percentual}%):</strong> ${primeiro.quantidade} × R$ ${fmtMoeda(vlrProduto)} = <strong>R$ ${fmtMoeda(primeiro.quantidade * vlrProduto)}</strong></span>
-          <span style="color:#94a3b8">|</span>
-          ${servicoSpan}
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:#374151;margin-top:${detalhesPartes.length > 0 ? "0" : "0"}px">
+          <div><span><strong>Produto (${primeiro.produto_percentual}%):</strong> ${primeiro.quantidade} × R$ ${fmtMoeda(vlrProduto)} = <strong>R$ ${fmtMoeda(primeiro.quantidade * vlrProduto)}</strong></span></div>
+          <div>${servicoSpan}</div>
         </div>`;
     }
 
     html += `
     <tr style="background:#fff">
-      <td style="padding:3px 8px 8px 8px;border-bottom:1px solid #e2e8f0;vertical-align:top"></td>
-      <td style="padding:3px 8px 8px 8px;border-bottom:1px solid #e2e8f0;vertical-align:top"></td>
-      <td colspan="6" style="padding:3px 8px 8px 8px;border-bottom:1px solid #e2e8f0;vertical-align:top">
-        ${detalhesPartes.length > 0 ? `<div style="font-size:11px;color:#475569;display:flex;flex-wrap:wrap;gap:12px">${detalhesPartes.join("")}</div>` : ""}
+      <td style="padding:3px 8px 10px 8px;border-bottom:1px solid #e2e8f0;vertical-align:top"></td>
+      <td style="padding:3px 8px 10px 8px;border-bottom:1px solid #e2e8f0;vertical-align:top"></td>
+      <td colspan="6" style="padding:3px 8px 10px 8px;border-bottom:1px solid #e2e8f0;vertical-align:top">
+        ${detalhesPartes.length > 0 ? `<div style="font-size:11px;color:#475569;display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px">${detalhesPartes.join(`<span style="color:#e2e8f0;margin:0 2px">|</span>`)}</div>` : ""}
         ${rateioRow}
       </td>
     </tr>`;
