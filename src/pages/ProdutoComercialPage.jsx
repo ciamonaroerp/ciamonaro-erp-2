@@ -213,7 +213,7 @@ export default function ProdutoComercialPage() {
   // Inicializa multiComposicoes combinando artigos + tabela_precos_sync
   useEffect(() => {
     const numVar = parseInt(formData.variáveis) || 1;
-    if (numVar >= 2 && editingId) {
+    if (editingId) {
       const existentes = artigos.map(a => {
         const preco = precosExistentes.find(p => p.codigo_unico === a.codigo_unico);
         return {
@@ -228,7 +228,7 @@ export default function ProdutoComercialPage() {
         };
       });
       initMultiComposicoes(numVar, existentes);
-    } else if (numVar >= 2) {
+    } else {
       initMultiComposicoes(numVar, []);
     }
   }, [editingId, modalOpen, artigos, precosExistentes, formData.variáveis]);
