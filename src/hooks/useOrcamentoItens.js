@@ -17,6 +17,7 @@ export function useOrcamentoItens(orcamentoId) {
     },
     enabled: !!orcamentoId,
     staleTime: 0,
+    gcTime: 0,
   });
 }
 

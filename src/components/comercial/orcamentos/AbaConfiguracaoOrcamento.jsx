@@ -86,10 +86,11 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
     },
     enabled: !!idLocal,
     staleTime: 0,
+    gcTime: 0,
     refetchOnMount: "always",
   });
 
-  const itensValidos = itens.filter(i => i != null);
+  const itensValidos = itens.filter(i => i != null && !i.deleted_at);
   const proximaSequencia = itensValidos.length > 0 ? Math.max(...itensValidos.map(i => i.sequencia || 0)) + 1 : 1;
 
   const subtotalGeral = itensValidos.reduce((s, i) => s + (parseFloat(i.subtotal) || 0), 0);
