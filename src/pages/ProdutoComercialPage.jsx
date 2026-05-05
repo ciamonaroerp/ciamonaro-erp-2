@@ -900,22 +900,43 @@ export default function ProdutoComercialPage() {
             )}
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
-            <Button variant="ghost" onClick={closeModal}>
-              {editingId ? "Fechar" : "Cancelar"}
+          <div className="flex justify-between gap-3 pt-4 border-t border-slate-200">
+            <Button 
+              variant="outline" 
+              onClick={async () => {
+                try {
+                  const res = await base44.functions.invoke('diagProdutoComercialCusto', {
+                    produto_id: editingId,
+                    empresa_id: empresa_id
+                  });
+                  console.log('DIAGNÓSTICO:', res.data);
+                  showSuccess({ title: "Diagnóstico", description: `Abra o console (F12) para ver os resultados detalhados.` });
+                } catch (err) {
+                  showError({ title: "Erro no diagnóstico", description: err.message });
+                }
+              }}
+              className="text-xs"
+              disabled={!editingId}
+            >
+              🔍 Diagnosticar
             </Button>
-            {!editingId && (
-              <Button onClick={handleSubmit} disabled={criarMutation.isPending} className="bg-blue-600 hover:bg-blue-700 text-white">
-                {criarMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                Criar
+            <div className="flex gap-3">
+              <Button variant="ghost" onClick={closeModal}>
+                {editingId ? "Fechar" : "Cancelar"}
               </Button>
-            )}
-            {editingId && (
-              <Button onClick={handleSubmit} disabled={editarMutation.isPending} className="bg-blue-600 hover:bg-blue-700 text-white">
-                {editarMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                Atualizar
-              </Button>
-            )}
+              {!editingId && (
+                <Button onClick={handleSubmit} disabled={criarMutation.isPending} className="bg-blue-600 hover:bg-blue-700 text-white">
+                  {criarMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Criar
+                </Button>
+              )}
+              {editingId && (
+                <Button onClick={handleSubmit} disabled={editarMutation.isPending} className="bg-blue-600 hover:bg-blue-700 text-white">
+                  {editarMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Atualizar
+                </Button>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
