@@ -15,7 +15,9 @@ import { useGlobalAlert } from "@/components/GlobalAlertDialog";
 import { cn } from "@/lib/utils";
 import { ErpTableContainer } from "@/components/design-system";
 
-const EMPTY = { nome_produto: "", descricao: "", status: "Ativo", variáveis: 1 };
+const EMPTY = { nome_produto: "", descricao: "", status: "Ativo", variáveis: 1, categorias_tamanho: [] };
+
+const CATEGORIAS_TAMANHO = ["Infantil", "Juvenil", "Adulto"];
 
 async function fetchProdutos(empresa_id) {
   if (!empresa_id) return [];
@@ -351,10 +353,22 @@ export default function ProdutoComercialPage() {
     setComposicaoSearch("");
   };
 
+  const toggleCategoria = (cat) => {
+    setFormData(p => {
+      const atual = Array.isArray(p.categorias_tamanho) ? p.categorias_tamanho : [];
+      return {
+        ...p,
+        categorias_tamanho: atual.includes(cat) ? atual.filter(c => c !== cat) : [...atual, cat],
+      };
+    });
+  };
+
   const handleSubmit = async () => {
     if (!formData.nome_produto) { showError({ title: "Campo obrigatório", description: "Nome do produto é obrigatório." }); return; }
     const numVar = parseInt(formData.variáveis) || 1;
     if (numVar < 1) { showError({ title: "Campo obrigatório", description: "Número de variáveis deve ser no mínimo 1." }); return; }
+    const cats = Array.isArray(formData.categorias_tamanho) ? formData.categorias_tamanho : [];
+    if (cats.length === 0) { showError({ title: "Campo obrigatório", description: "Selecione ao menos uma categoria de tamanho." }); return; }
 
     try {
       if (editingId) {
@@ -405,7 +419,7 @@ export default function ProdutoComercialPage() {
 
   const handleEdit = (row) => {
     // Mapeia num_variaveis → variáveis para garantir que o loop gere as composições corretas
-    setFormData({ ...row, variáveis: row.variáveis || row.num_variaveis || 1 });
+    setFormData({ ...row, variáveis: row.variáveis || row.num_variaveis || 1, categorias_tamanho: Array.isArray(row.categorias_tamanho) ? row.categorias_tamanho : [] });
     setEditingId(row.id);
     setComposicaoSearch("");
     setModalOpen(true);
@@ -544,6 +558,36 @@ export default function ProdutoComercialPage() {
               <label className="text-sm font-medium text-slate-900 block mb-1">Nome do Produto *</label>
               <Input value={formData.nome_produto || ""} onChange={e => setFormData(p => ({ ...p, nome_produto: e.target.value }))} placeholder="Ex: Camiseta Manga Curta Esportiva" />
             </div>
+
+            {/* Categorias de Tamanho */}
+            <div>
+              <label className="text-sm font-medium text-slate-900 block mb-1">
+                Categorias de Tamanho *
+                <span className="ml-1 text-xs font-normal text-slate-400">(selecione ao menos uma)</span>
+              </label>
+              <div className="flex gap-3">
+                {CATEGORIAS_TAMANHO.map(cat => {
+                  const sel = (Array.isArray(formData.categorias_tamanho) ? formData.categorias_tamanho : []).includes(cat);
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => toggleCategoria(cat)}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all select-none",
+                        sel
+                          ? "bg-blue-600 border-blue-600 text-white"
+                          : "bg-white border-slate-300 text-slate-700 hover:border-blue-400 hover:bg-blue-50"
+                      )}
+                    >
+                      {sel && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="grid gap-4" style={{ gridTemplateColumns: 'minmax(0,80px) 1fr' }}>
               <div>
                 <label className="text-sm font-medium text-slate-900 block mb-1">Variáveis</label>
