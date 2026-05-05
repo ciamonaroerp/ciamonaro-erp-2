@@ -35,7 +35,20 @@ async function invoke(action, payload) {
   }
   if (action === 'upsert_rendimento_valor') {
     const { empresa_id, rendimento_id, produto_id, descricao_artigo, vinculo_id, valor } = payload;
-    const { error } = await supabase.from('produto_rendimento_valores').upsert({ empresa_id, rendimento_id, produto_id, descricao_artigo: descricao_artigo || '', vinculo_id: vinculo_id || null, valor, sincronizado: true }, { onConflict: 'rendimento_id,produto_id,descricao_artigo' });
+    // Tenta upsert por rendimento_id + produto_id + vinculo_id para não sobrescrever outros artigos
+    const { data: existing } = await supabase
+      .from('produto_rendimento_valores')
+      .select('id')
+      .eq('rendimento_id', rendimento_id)
+      .eq('produto_id', produto_id)
+      .eq('vinculo_id', vinculo_id || '')
+      .maybeSingle();
+    let error;
+    if (existing?.id) {
+      ({ error } = await supabase.from('produto_rendimento_valores').update({ valor, sincronizado: true, descricao_artigo: descricao_artigo || '' }).eq('id', existing.id));
+    } else {
+      ({ error } = await supabase.from('produto_rendimento_valores').insert({ empresa_id, rendimento_id, produto_id, descricao_artigo: descricao_artigo || '', vinculo_id: vinculo_id || null, valor, sincronizado: true }));
+    }
     if (error) return { data: { error: error.message } };
     return { data: {} };
   }
@@ -176,14 +189,8 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
     const map = {};
     for (const v of valores) {
       const vid = v.vinculo_id || '';
-      // Salva com a chave real E com string vazia para garantir match em qualquer caso
+      // Indexa estritamente por vinculo_id para não misturar valores de artigos diferentes
       map[`${v.rendimento_id}|${v.produto_id}|${vid}`] = v.valor;
-      if (vid !== '') {
-        // Também indexa com string vazia para fallback quando vinculo_id é null no banco
-        if (map[`${v.rendimento_id}|${v.produto_id}|`] == null) {
-          map[`${v.rendimento_id}|${v.produto_id}|`] = v.valor;
-        }
-      }
     }
     return map;
   }, [valores]);
@@ -344,10 +351,8 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
     const grupo = getComposicoesDoProduto(produto.id);
     const vid = vinculo_id || '';
     Object.values(grupo).flat().forEach(rid => {
-      // Tenta com o vinculo_id real, depois com string vazia (null no banco), depois com null literal
-      const val = freshMap[`${rid}|${produto.id}|${vid}`]
-        ?? freshMap[`${rid}|${produto.id}|`]
-        ?? freshMap[`${rid}|${produto.id}|null`];
+      // Busca SOMENTE pelo vinculo_id exato deste item — sem fallback para outros artigos
+      const val = freshMap[`${rid}|${produto.id}|${vid}`];
       inputs[rid] = val != null ? parseFloat(val).toFixed(3).replace('.', ',') : "";
     });
     setRendInputs(inputs);
