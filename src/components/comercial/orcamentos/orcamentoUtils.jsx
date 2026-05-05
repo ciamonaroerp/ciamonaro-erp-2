@@ -103,7 +103,7 @@ export function gerarTextoWhatsApp({ orcamento, itens = [], extra = {} }) {
 
     grupos.forEach(grupo => {
       const primeiro = grupo[0];
-      const nome = primeiro.nome_produto || primeiro.nome_servico || "Serviço";
+      const nome = primeiro.nome_produto || primeiro.nome_servico || primeiro.descricao_servico || primeiro.observacoes || "Serviço";
       const seqWpp = primeiro.sequencia ? `#${primeiro.sequencia} ` : "";
       txt += `\n• ${seqWpp}*${primeiro.quantidade} un.* ${nome}\n`;
       if (primeiro.resumo_composicoes) txt += `  Composição: ${primeiro.resumo_composicoes}\n`;
@@ -190,7 +190,7 @@ function renderGrupoPDF(primeiro, itensOrdenados) {
   const isProdutoServico = primeiro.tipo_item === "Produto e Serviço";
 
   const nomeDescricao = isServico
-    ? (primeiro.nome_servico || primeiro.descricao_servico || "Serviço")
+    ? (primeiro.nome_servico || primeiro.descricao_servico || primeiro.observacoes || "Serviço")
     : (primeiro.nome_produto || "—");
 
   // Ordena por índice e separa
