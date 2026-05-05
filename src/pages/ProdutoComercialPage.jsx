@@ -235,6 +235,8 @@ export default function ProdutoComercialPage() {
       setComposicoesPorVariavel({});
       return;
     }
+    // Aguarda os dados estarem disponíveis (não apenas undefined inicial)
+    if (!composicoesQuery.isSuccess) return;
     const lista = composicoesVinculadas || [];
     const mapa = {};
     lista.forEach(c => {
@@ -243,7 +245,7 @@ export default function ProdutoComercialPage() {
       mapa[idx].push(String(c.rendimento_id));
     });
     setComposicoesPorVariavel(mapa);
-  }, [editingId, modalOpen, composicoesVinculadas])
+  }, [editingId, modalOpen, composicoesVinculadas, composicoesQuery.isSuccess])
 
   const filtered = useMemo(() => {
     let result = produtos;
