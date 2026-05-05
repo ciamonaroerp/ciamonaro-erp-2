@@ -313,33 +313,10 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
     staleTime: 30000,
   });
 
-  // Retorna: 'pendente' | 'pronto'
-  // Pronto se TODOS os rendimentos de PELO MENOS UMA variável (variavel_index) estiverem preenchidos > 0
-  const getStatus = (produto_id, vinculo_id) => {
-    const vid = vinculo_id || '';
-
-    const grupo = getComposicoesDoProduto(produto_id); // { variavel_index: [rid, rid, ...] }
-    const variaveis = Object.keys(grupo);
-    if (variaveis.length === 0) return 'pendente';
-
-    const valoresDoProduto = valores.filter(v => v.produto_id === produto_id && !v.deleted_at);
-    // Determina qual conjunto usar: valores com vinculo_id exato, ou legados (null)
-    const temRegistroComVinculo = valoresDoProduto.some(v => (v.vinculo_id || '') === vid);
-    const valoresDoItem = temRegistroComVinculo
-      ? valoresDoProduto.filter(v => (v.vinculo_id || '') === vid)
-      : valoresDoProduto.filter(v => !v.vinculo_id);
-
-    // "Pronto" se pelo menos uma variável tem TODOS os seus rendimentos com valor > 0
-    const algumVariavelCompleta = variaveis.some(idx => {
-      const rids = grupo[idx].filter(rid => !!rendimentosMap[rid]);
-      if (rids.length === 0) return false;
-      return rids.every(rid => {
-        const v = valoresDoItem.find(val => val.rendimento_id === rid);
-        return v && parseFloat(v.valor) > 0;
-      });
-    });
-
-    return algumVariavelCompleta ? 'pronto' : 'pendente';
+  // Retorna o status persistido direto do produto_comercial.status_rendimento
+  const getStatus = (produto_id) => {
+    const produto = produtos.find(p => p.id === produto_id);
+    return produto?.status_rendimento || 'pendente';
   };
 
   const temValores = (produto_id, vinculo_id) => getStatus(produto_id, vinculo_id) !== 'pendente';
@@ -433,11 +410,11 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
   const PRIORIDADE_STATUS = { pendente: 0, sincronizar: 1, pronto: 2 };
   const linhasOrdenadas = useMemo(() => {
     return [...linhasFiltradas].sort((a, b) => {
-      const sa = PRIORIDADE_STATUS[getStatus(a.produto.id, a.vinculo_id)] ?? 2;
-      const sb = PRIORIDADE_STATUS[getStatus(b.produto.id, b.vinculo_id)] ?? 2;
+      const sa = PRIORIDADE_STATUS[getStatus(a.produto.id)] ?? 2;
+      const sb = PRIORIDADE_STATUS[getStatus(b.produto.id)] ?? 2;
       return sa - sb;
     });
-  }, [linhasFiltradas, statusBackend]);
+  }, [linhasFiltradas, produtos]);
 
   const totalPaginas = Math.max(1, Math.ceil(linhasOrdenadas.length / ITENS_POR_PAGINA));
   const paginaAtual = Math.min(pagina, totalPaginas);
@@ -457,7 +434,7 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
     produto: p,
     vinculo_id,
     artigo_nome,
-    type: getStatus(p.id, vinculo_id),
+    type: getStatus(p.id),
   }));
 
   return (

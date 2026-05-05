@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGlobalAlert } from "@/components/GlobalAlertDialog";
 import { cn } from "@/lib/utils";
 import { ErpTableContainer } from "@/components/design-system";
+import { base44 } from "@/api/base44Client";
 
 const EMPTY = { nome_produto: "", descricao: "", status: "Ativo", variáveis: 1, categorias_tamanho: [] };
 
@@ -428,6 +429,16 @@ export default function ProdutoComercialPage() {
               .eq('empresa_id', empresa_id)
               .catch(err => console.warn('Aviso ao salvar consumo/custo:', err.message));
           }
+        }
+
+        // Valida e salva status_rendimento
+        try {
+          await base44.functions.invoke('validarStatusRendimento', {
+            produto_id: editingId,
+            empresa_id
+          });
+        } catch (err) {
+          console.warn('Aviso ao validar status_rendimento:', err.message);
         }
 
         await qc.invalidateQueries({ queryKey: ["produto-comercial", empresa_id] });
