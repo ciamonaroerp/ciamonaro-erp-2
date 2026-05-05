@@ -314,22 +314,26 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
   });
 
   // Retorna: 'pendente' | 'pronto'
-  // Pendente se: sem valores, ou se qualquer rendimento obrigatório (da composição) for zero
+  // Pendente se: sem valores para este vinculo_id, ou se qualquer rendimento obrigatório for zero
   const getStatus = (produto_id, vinculo_id) => {
-    const valoresDoP = valores.filter(v => v.produto_id === produto_id && !v.deleted_at);
-    if (valoresDoP.length === 0) return 'pendente';
+    const vid = vinculo_id || '';
+    // Filtra valores EXCLUSIVAMENTE para este produto + vinculo_id
+    const valoresDoItem = valores.filter(v => {
+      if (v.produto_id !== produto_id || v.deleted_at) return false;
+      return (v.vinculo_id || '') === vid;
+    });
 
     // Verifica se todos os rendimentos vinculados à composição têm valor > 0
     const grupo = getComposicoesDoProduto(produto_id);
     const ridsObrigatorios = Object.values(grupo).flat().filter(rid => !!rendimentosMap[rid]);
+
     if (ridsObrigatorios.length === 0) {
-      // Sem composição definida, verifica apenas se tem algum valor positivo
-      return valoresDoP.some(v => parseFloat(v.valor) > 0) ? 'pronto' : 'pendente';
+      return valoresDoItem.some(v => parseFloat(v.valor) > 0) ? 'pronto' : 'pendente';
     }
 
-    // Pendente se qualquer rendimento da composição tiver valor 0 ou ausente
+    // Pendente se qualquer rendimento da composição tiver valor 0 ou ausente para este vinculo_id
     const temZero = ridsObrigatorios.some(rid => {
-      const v = valoresDoP.find(val => val.rendimento_id === rid);
+      const v = valoresDoItem.find(val => val.rendimento_id === rid);
       return !v || parseFloat(v.valor) === 0;
     });
     return temZero ? 'pendente' : 'pronto';
