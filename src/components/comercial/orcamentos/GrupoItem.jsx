@@ -30,7 +30,7 @@ export default function GrupoItem({ grupo, onEditar, onExcluir, readOnly = false
   const hasItensAdicionais = Array.isArray(primeiro.itens_adicionais) && primeiro.itens_adicionais.length > 0;
 
   const hasDetalhes = (isProduto || isProdutoServico)
-    ? (hasAcabamentos || hasPersonalizacoes || hasOperacoes || hasItensAdicionais)
+    ? (hasAcabamentos || hasItensAdicionais)
     : isServico
     ? (hasOperacoes || hasPersonalizacoes || hasItensAdicionais || primeiro.observacoes)
     : false;
@@ -191,19 +191,14 @@ export default function GrupoItem({ grupo, onEditar, onExcluir, readOnly = false
               {primeiro.acabamentos.map(a => a?.descricao || a?.nome_acabamento || String(a)).join(", ")}
             </span>
           )}
-          {hasPersonalizacoes && (
+          {hasItensAdicionais && (
             <span className="text-slate-500">
-              <span className="font-medium text-slate-600">Personalização: </span>
-              {primeiro.personalizacoes.map(p => {
-                const desc = p?.descricao || p?.tipo_personalizacao || String(p);
-                const partes = [];
-                if (p?.cores) partes.push(`${p.cores} cor${p.cores > 1 ? 'es' : ''}`);
-                if (p?.posicoes) partes.push(`${p.posicoes} posição${p.posicoes > 1 ? 'ões' : ''}`);
-                return partes.length > 0 ? `${desc} (${partes.join(", ")})` : desc;
-              }).join(" | ")}
+              <span className="font-medium text-slate-600">Itens adicionais: </span>
+              {primeiro.itens_adicionais.map(a => a?.descricao || a?.tipo_dependencia || "—").join(", ")}
             </span>
           )}
-          {hasOperacoes && (
+          {/* Para Serviço puro: exibe operações e personalizações aqui */}
+          {isServico && hasOperacoes && (
             <span className="text-slate-500">
               <span className="font-medium text-slate-600">Operações: </span>
               {primeiro.operacoes.map(o => {
@@ -213,10 +208,16 @@ export default function GrupoItem({ grupo, onEditar, onExcluir, readOnly = false
               }).join(" | ")}
             </span>
           )}
-          {hasItensAdicionais && (
+          {isServico && hasPersonalizacoes && (
             <span className="text-slate-500">
-              <span className="font-medium text-slate-600">Itens adicionais: </span>
-              {primeiro.itens_adicionais.map(a => a?.descricao || a?.tipo_dependencia || "—").join(", ")}
+              <span className="font-medium text-slate-600">Personalização: </span>
+              {primeiro.personalizacoes.map(p => {
+                const desc = p?.descricao || p?.tipo_personalizacao || String(p);
+                const partes = [];
+                if (p?.cores) partes.push(`${p.cores} cor${p.cores > 1 ? 'es' : ''}`);
+                if (p?.posicoes) partes.push(`${p.posicoes} posição${p.posicoes > 1 ? 'ões' : ''}`);
+                return partes.length > 0 ? `${desc} (${partes.join(", ")})` : desc;
+              }).join(" | ")}
             </span>
           )}
         </div>
@@ -238,7 +239,7 @@ export default function GrupoItem({ grupo, onEditar, onExcluir, readOnly = false
             <>
               <span className="text-slate-400">|</span>
               <span className="text-slate-500">
-                <span className="font-medium text-slate-600">Personalização: </span>
+                <span className="font-medium text-slate-600">Serviço de Personalização: </span>
                 {primeiro.personalizacoes.map(p => {
                   const desc = p?.descricao || p?.tipo_personalizacao || String(p);
                   const partes = [];
