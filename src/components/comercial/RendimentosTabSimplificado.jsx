@@ -35,19 +35,40 @@ async function invoke(action, payload) {
   }
   if (action === 'upsert_rendimento_valor') {
     const { empresa_id, rendimento_id, produto_id, descricao_artigo, vinculo_id, valor } = payload;
-    // Tenta upsert por rendimento_id + produto_id + vinculo_id para não sobrescrever outros artigos
-    const { data: existing } = await supabase
+    // Busca por rendimento_id + produto_id + vinculo_id (chave lógica por artigo)
+    const query = supabase
       .from('produto_rendimento_valores')
       .select('id')
       .eq('rendimento_id', rendimento_id)
-      .eq('produto_id', produto_id)
-      .eq('vinculo_id', vinculo_id || '')
-      .maybeSingle();
+      .eq('produto_id', produto_id);
+    if (vinculo_id) {
+      query.eq('vinculo_id', vinculo_id);
+    } else {
+      query.is('vinculo_id', null);
+    }
+    const { data: existing } = await query.maybeSingle();
     let error;
     if (existing?.id) {
-      ({ error } = await supabase.from('produto_rendimento_valores').update({ valor, sincronizado: true, descricao_artigo: descricao_artigo || '' }).eq('id', existing.id));
+      ({ error } = await supabase.from('produto_rendimento_valores')
+        .update({ valor, sincronizado: true, descricao_artigo: descricao_artigo || '', vinculo_id: vinculo_id || null })
+        .eq('id', existing.id));
     } else {
-      ({ error } = await supabase.from('produto_rendimento_valores').insert({ empresa_id, rendimento_id, produto_id, descricao_artigo: descricao_artigo || '', vinculo_id: vinculo_id || null, valor, sincronizado: true }));
+      // Verifica se existe pela constraint do banco (rendimento_id + produto_id + descricao_artigo)
+      const { data: existingByDesc } = await supabase
+        .from('produto_rendimento_valores')
+        .select('id')
+        .eq('rendimento_id', rendimento_id)
+        .eq('produto_id', produto_id)
+        .eq('descricao_artigo', descricao_artigo || '')
+        .maybeSingle();
+      if (existingByDesc?.id) {
+        ({ error } = await supabase.from('produto_rendimento_valores')
+          .update({ valor, sincronizado: true, vinculo_id: vinculo_id || null })
+          .eq('id', existingByDesc.id));
+      } else {
+        ({ error } = await supabase.from('produto_rendimento_valores')
+          .insert({ empresa_id, rendimento_id, produto_id, descricao_artigo: descricao_artigo || '', vinculo_id: vinculo_id || null, valor, sincronizado: true }));
+      }
     }
     if (error) return { data: { error: error.message } };
     return { data: {} };
