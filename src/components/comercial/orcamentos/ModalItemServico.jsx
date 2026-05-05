@@ -444,6 +444,7 @@ export default function ModalItemServico({ open, onClose, onSalvar, empresaId, p
         sequencia: parseInt(form.sequencia),
         tipo_item: "Serviço",
         usuario_id,
+        empresa_id: empresaId || null,
         quantidade,
         observacoes: form.observacoes || null,
         valor_unitario: valorUnitario,
