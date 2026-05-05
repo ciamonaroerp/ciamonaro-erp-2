@@ -19,9 +19,8 @@ Deno.serve(async (req) => {
 
     const { data: precosSync, error: errorPrecos } = await supabase
       .from('tabela_precos_sync')
-      .select('id, codigo_unico, artigo_nome, cor_nome, linha_nome, consumo_un, custo_kg, custo_un, produto_id')
+      .select('id, codigo_unico, artigo_nome, cor_nome, linha_nome, consumo_un, custo_kg, custo_un, produto_id, empresa_id')
       .eq('produto_id', produto_id)
-      .eq('empresa_id', empresa_id);
 
     const { data: artigos, error: errorArtigos } = await supabase
       .from('produto_comercial_artigo')
