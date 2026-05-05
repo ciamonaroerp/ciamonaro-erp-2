@@ -86,25 +86,22 @@ async function deleteProduto(id) {
 }
 
 async function createArtigo(empresa_id, produto_id, artigoData, createdBy) {
-  const { data, error } = await supabase
-    .from('produto_comercial_artigo')
-    .insert({
-      produto_id,
-      empresa_id,
-      created_by: createdBy,
-      vinculo_id: artigoData.vinculo_id,
-      codigo_unico: artigoData.codigo_unico,
-      artigo_codigo: artigoData.artigo_codigo || null,
-      artigo_nome: artigoData.artigo_nome,
-      cor_nome: artigoData.cor_nome,
-      linha_nome: artigoData.linha_nome,
-      variavel_index: artigoData.variavel_index ?? 1,
-      status_rendimento: "pendente",
-    })
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
-  return data || {};
+   const { data, error } = await supabase
+     .from('produto_comercial_artigo')
+     .insert({
+       produto_id,
+       empresa_id,
+       created_by: createdBy,
+       vinculo_id: artigoData.vinculo_id,
+       codigo_unico: artigoData.codigo_unico,
+       artigo_codigo: artigoData.artigo_codigo || null,
+       variavel_index: artigoData.variavel_index ?? 1,
+       status_rendimento: "pendente",
+     })
+     .select()
+     .single();
+   if (error) throw new Error(error.message);
+   return data || {};
 }
 
 async function deleteArtigo(id) {
