@@ -828,7 +828,7 @@ export default function ProdutoComercialPage() {
                   {artigosComDetalhes.map((a, idx) => {
                     const preco = precosExistentes.find(p => p.codigo_unico === a.codigo_unico);
                     return (
-                      <div key={a.id} className="grid gap-3 p-2 bg-white rounded border border-slate-200" style={{ gridTemplateColumns: '1fr 100px 100px' }}>
+                      <div key={a.id} className="grid gap-3 p-2 bg-white rounded border border-slate-200" style={{ gridTemplateColumns: '1fr 90px 90px 90px' }}>
                         <div>
                           <span className="text-xs font-semibold text-slate-700 block">{a.codigo_unico} • {a.artigo_nome}</span>
                           <span className="text-xs text-slate-500">{[a.cor_nome, a.linha_nome].filter(Boolean).join(' • ') || '—'}</span>
@@ -862,6 +862,17 @@ export default function ProdutoComercialPage() {
                               setMultiComposicoes([...multiComposicoes]);
                             }}
                             className="w-full px-2 py-1 text-xs border border-slate-200 rounded"
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-slate-600 block mb-1">Custo (un)</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={preco?.custo_un || ''}
+                            readOnly
+                            className="w-full px-2 py-1 text-xs border border-slate-200 rounded bg-slate-100"
                             placeholder="0.00"
                           />
                         </div>
