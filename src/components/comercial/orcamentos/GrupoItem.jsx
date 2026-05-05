@@ -20,7 +20,7 @@ export default function GrupoItem({ grupo, onEditar, onExcluir, readOnly = false
   const isProdutoServico = primeiro.tipo_item === "Produto e Serviço";
 
   const nomeDescricao = isServico
-    ? (primeiro.nome_servico || primeiro.descricao_servico || "Serviço")
+    ? (primeiro.observacoes || "Serviço")
     : (primeiro.nome_produto || "—");
 
   // Verifica se há detalhes comuns (primeiro item)
@@ -73,24 +73,36 @@ export default function GrupoItem({ grupo, onEditar, onExcluir, readOnly = false
         </span>
 
         {/* COLUNA 4: ITEM [1] + LINHA */}
-        <div className="flex items-center gap-1 min-w-0">
-          <span className="inline-flex items-center justify-center w-4 h-4 rounded bg-blue-100 text-blue-700 font-bold text-[8px] shrink-0">
-            {primeiro_item.indice || 1}
-          </span>
-          <span className="text-slate-600 truncate text-xs" title={primeiro_item.linha_nome || "—"}>
-            {primeiro_item.linha_nome || <span className="text-slate-300">—</span>}
-          </span>
-        </div>
+        {isServico ? (
+          <span className="text-slate-300 text-xs">—</span>
+        ) : (
+          <div className="flex items-center gap-1 min-w-0">
+            <span className="inline-flex items-center justify-center w-4 h-4 rounded bg-blue-100 text-blue-700 font-bold text-[8px] shrink-0">
+              {primeiro_item.indice || 1}
+            </span>
+            <span className="text-slate-600 truncate text-xs" title={primeiro_item.linha_nome || "—"}>
+              {primeiro_item.linha_nome || <span className="text-slate-300">—</span>}
+            </span>
+          </div>
+        )}
 
         {/* COLUNA 5: ARTIGO (completo, sem truncate) */}
-        <span className="text-slate-700 text-xs" title={primeiro_item.artigo_nome || "—"}>
-          {primeiro_item.artigo_nome || <span className="text-slate-300">—</span>}
-        </span>
+        {isServico ? (
+          <span className="text-slate-300 text-xs">—</span>
+        ) : (
+          <span className="text-slate-700 text-xs" title={primeiro_item.artigo_nome || "—"}>
+            {primeiro_item.artigo_nome || <span className="text-slate-300">—</span>}
+          </span>
+        )}
 
         {/* COLUNA 6: COR */}
-        <span className="text-slate-600 truncate text-xs" title={primeiro_item.cor_nome || "—"}>
-          {primeiro_item.cor_nome || <span className="text-slate-300">—</span>}
-        </span>
+        {isServico ? (
+          <span className="text-slate-300 text-xs">—</span>
+        ) : (
+          <span className="text-slate-600 truncate text-xs" title={primeiro_item.cor_nome || "—"}>
+            {primeiro_item.cor_nome || <span className="text-slate-300">—</span>}
+          </span>
+        )}
 
         {/* COLUNA 7: VLR.UNIT */}
         <span className="text-xs text-slate-600 text-right">
