@@ -190,6 +190,11 @@ export default function ConfiguracaoExtrasPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [saving, setSaving] = useState(false);
 
+  // ── Estado Tamanhos ──
+  const [tamanhoModal, setTamanhoModal] = useState(false);
+  const [tamanhoEditingId, setTamanhoEditingId] = useState(null);
+  const [tamanhoForm, setTamanhoForm] = useState({ tamanho_abreviado: "", descricao: "" });
+
   // ── Estado Estamparia ──
   const [estampariaModal, setEstampariaModal] = useState(false);
   const [estampariaEditingId, setEstampariaEditingId] = useState(null);
@@ -249,6 +254,13 @@ export default function ConfiguracaoExtrasPage() {
     staleTime: 0,
   });
 
+  const tamanhosQuery = useQuery({
+    queryKey: ["config-extras-tamanhos", empresa_id],
+    queryFn: () => listar("config_tamanhos", empresa_id),
+    enabled: !!empresa_id,
+    staleTime: 0,
+  });
+
   // Verificação de vínculos para cada item de estamparia
   const [vinculosEstamparia, setVinculosEstamparia] = useState({});
   const [loadingVinculos, setLoadingVinculos] = useState(false);
@@ -272,6 +284,7 @@ export default function ConfiguracaoExtrasPage() {
   const personalizacoes = (personalizacaoQuery.data || []).filter(i => !i.deleted_at);
   const dependencias = (dependenciasQuery.data || []).filter(i => !i.deleted_at);
   const estamparia = (estampariaQuery.data || []).filter(i => !i.deleted_at);
+  const tamanhos = (tamanhosQuery.data || []).filter(i => !i.deleted_at);
 
   // ── Helpers ──
   const resetForm = () => {
@@ -508,6 +521,83 @@ export default function ConfiguracaoExtrasPage() {
     setSaving(false);
   };
 
+  // ── Handlers Tamanhos ──
+  const gerarCodigoTamanho = (lista) => {
+    const nums = lista.map(item => {
+      const cod = item.codigo || "";
+      if (cod.toUpperCase().startsWith("T")) return parseInt(cod.slice(1), 10);
+      return 0;
+    }).filter(n => !isNaN(n) && n > 0);
+    const max = nums.length > 0 ? Math.max(...nums) : 0;
+    return `T${String(max + 1).padStart(3, "0")}`;
+  };
+
+  const handleTamanhoOpen = (item = null) => {
+    if (item) {
+      setTamanhoEditingId(item.id);
+      setTamanhoForm({ tamanho_abreviado: item.tamanho_abreviado || "", descricao: item.descricao || "" });
+    } else {
+      setTamanhoEditingId(null);
+      setTamanhoForm({ tamanho_abreviado: "", descricao: "" });
+    }
+    setTamanhoModal(true);
+  };
+
+  const handleTamanhoSave = async () => {
+    if (!tamanhoForm.tamanho_abreviado.trim()) {
+      showError({ title: "Campo obrigatório", description: "Tamanho Abreviado é obrigatório." });
+      return;
+    }
+    if (!tamanhoForm.descricao.trim()) {
+      showError({ title: "Campo obrigatório", description: "Descrição é obrigatória." });
+      return;
+    }
+    setSaving(true);
+    try {
+      if (tamanhoEditingId) {
+        await atualizar("config_tamanhos", tamanhoEditingId, {
+          tamanho_abreviado: tamanhoForm.tamanho_abreviado.trim().toUpperCase(),
+          descricao: tamanhoForm.descricao.trim(),
+          updated_at: new Date().toISOString(),
+        });
+        showSuccess({ title: "Atualizado", description: "Tamanho atualizado com sucesso." });
+      } else {
+        await criar("config_tamanhos", empresa_id, {
+          codigo: gerarCodigoTamanho(tamanhos),
+          tamanho_abreviado: tamanhoForm.tamanho_abreviado.trim().toUpperCase(),
+          descricao: tamanhoForm.descricao.trim(),
+          created_at: new Date().toISOString(),
+        });
+        showSuccess({ title: "Sucesso", description: "Tamanho adicionado com sucesso." });
+      }
+      queryClient.invalidateQueries({ queryKey: ["config-extras-tamanhos"] });
+      setTamanhoModal(false);
+      setTamanhoEditingId(null);
+      setTamanhoForm({ tamanho_abreviado: "", descricao: "" });
+    } catch (err) {
+      showError({ title: "Erro ao salvar", description: err.message });
+    }
+    setSaving(false);
+  };
+
+  const handleTamanhoDelete = (id) => {
+    showConfirm({
+      title: "Deseja excluir?",
+      description: "Ação irreversível",
+      confirmLabel: "Excluir",
+      confirmVariant: "destructive",
+      onConfirm: async () => {
+        try {
+          await softDelete("config_tamanhos", id);
+          showSuccess({ title: "Removido", description: "Tamanho removido com sucesso." });
+          queryClient.invalidateQueries({ queryKey: ["config-extras-tamanhos"] });
+        } catch (err) {
+          showError({ title: "Erro ao remover", description: err.message });
+        }
+      },
+    });
+  };
+
   const handleEstampariaDelete = (id) => {
     if (vinculosEstamparia[id]) {
       showError({
@@ -577,11 +667,12 @@ export default function ConfiguracaoExtrasPage() {
       </div>
 
       <Tabs defaultValue="acabamento" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 mb-6">
+        <TabsList className="grid w-full grid-cols-5 mb-6">
           <TabsTrigger value="acabamento">Acabamentos Especiais</TabsTrigger>
           <TabsTrigger value="personalizacao">Tipos de Personalização</TabsTrigger>
           <TabsTrigger value="dependencia">Itens adicionais</TabsTrigger>
           <TabsTrigger value="estamparia">Parâmetros estamparia</TabsTrigger>
+          <TabsTrigger value="tamanhos">Definição de Tamanhos</TabsTrigger>
         </TabsList>
 
         {/* ABA 1 — ACABAMENTOS */}
@@ -786,7 +877,87 @@ export default function ConfiguracaoExtrasPage() {
             </Table>
           </Card>
         </TabsContent>
+
+        {/* ABA 5 — TAMANHOS */}
+        <TabsContent value="tamanhos" className="space-y-4">
+          <div className="flex justify-end">
+            <Button onClick={() => handleTamanhoOpen()} className="gap-2 bg-blue-600 hover:bg-blue-700">
+              <Plus className="h-4 w-4" />
+              Novo Tamanho
+            </Button>
+          </div>
+          <TabelaRegistros
+            loading={tamanhosQuery.isLoading}
+            emptyMsg="Nenhum tamanho cadastrado"
+            colunas={[
+              { key: "codigo", label: "Código", mono: true },
+              { key: "tamanho_abreviado", label: "Tamanho Abreviado" },
+              { key: "descricao", label: "Descrição", muted: true },
+              {
+                key: "updated_at",
+                label: "Criação / Edição",
+                muted: true,
+                render: (item) => {
+                  const d = item.updated_at || item.created_at;
+                  return d ? new Date(d).toLocaleDateString("pt-BR") : "-";
+                },
+              },
+            ]}
+            dados={tamanhos}
+            onEditar={(item) => handleTamanhoOpen(item)}
+            onDeletar={(id) => handleTamanhoDelete(id)}
+          />
+        </TabsContent>
       </Tabs>
+
+      {/* MODAL TAMANHOS */}
+      <Dialog open={tamanhoModal} onOpenChange={(v) => { if (!v) { setTamanhoModal(false); setTamanhoEditingId(null); setTamanhoForm({ tamanho_abreviado: "", descricao: "" }); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{tamanhoEditingId ? "Editar Tamanho" : "Novo Tamanho"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-slate-600">Código</label>
+              <div className="mt-1 px-3 py-2 bg-slate-100 rounded text-sm font-mono text-slate-500">
+                {tamanhoEditingId
+                  ? (tamanhos.find(t => t.id === tamanhoEditingId)?.codigo || "—")
+                  : gerarCodigoTamanho(tamanhos)}
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Tamanho Abreviado * <span className="text-slate-400 font-normal">(máx. 3 caracteres)</span></label>
+              <Input
+                value={tamanhoForm.tamanho_abreviado}
+                onChange={e => {
+                  const val = e.target.value.replace(/[^a-zA-Z0-9]/g, "").slice(0, 3).toUpperCase();
+                  setTamanhoForm(p => ({ ...p, tamanho_abreviado: val }));
+                }}
+                maxLength={3}
+                className="mt-1 font-mono uppercase"
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Descrição *</label>
+              <Input
+                value={tamanhoForm.descricao}
+                onChange={e => setTamanhoForm(p => ({ ...p, descricao: e.target.value }))}
+                className="mt-1"
+                autoComplete="off"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setTamanhoModal(false); setTamanhoEditingId(null); setTamanhoForm({ tamanho_abreviado: "", descricao: "" }); }} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleTamanhoSave} className="bg-blue-600 hover:bg-blue-700" disabled={saving}>
+              {saving ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Salvando...</> : tamanhoEditingId ? "Atualizar" : "Adicionar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* MODAL ESTAMPARIA */}
       <Dialog open={estampariaModal} onOpenChange={(v) => { if (!v) { setEstampariaModal(false); setEstampariaEditingId(null); setEstampariaForm(estampariaFormVazio || { descricao: "", tipo_parametro: [], valor: "", tempo: "", unidade: "" }); } }}>
