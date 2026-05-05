@@ -386,6 +386,19 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
     }
     qc.invalidateQueries(["rendimentos-valores", empresa_id]);
     
+    // Valida e atualiza status do artigo
+    try {
+      await fetch(`${window.location.origin}/api/validarStatusRendimento`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ produto_id: editingProduto.id, empresa_id })
+      });
+    } catch (e) {
+      console.error('Erro ao validar status:', e);
+    }
+
+    qc.invalidateQueries(["rendimentos-artigos", empresa_id]);
+    
     const produtoEditado = { ...editingProduto };
     setEditModalOpen(false);
     setEditingProduto(null);
