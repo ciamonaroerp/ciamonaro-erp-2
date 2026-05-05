@@ -547,7 +547,7 @@ export default function ProdutoComercialPage() {
                 )}
                 {filtered.map(p => (
                   <tr key={p.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => handleEdit(p)}>
-                    <td className="px-4 py-3 font-mono font-semibold text-blue-700">{p.codigo || "—"}</td>
+                    <td className="px-4 py-3 font-mono font-semibold text-blue-700">{p.codigo_produto || "—"}</td>
                     <td className="px-4 py-3 font-medium">{p.nome_produto}</td>
                     <td className="px-4 py-3 text-slate-600 text-xs">{p.descricao || "-"}</td>
                     <td className="px-4 py-3">
