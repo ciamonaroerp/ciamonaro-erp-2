@@ -19,15 +19,15 @@ Deno.serve(async (req) => {
     if (action === 'create_produto') {
       const { data: existentes } = await supabase
         .from('produto_comercial')
-        .select('codigo')
+        .select('codigo_produto')
         .eq('empresa_id', empresa_id);
 
       const numeros = (existentes || []).map(p => {
-        const match = p.codigo?.match(/^P(\d+)$/);
+        const match = p.codigo_produto?.match(/^P(\d+)$/);
         return match ? parseInt(match[1]) : 0;
       });
       const max = numeros.length > 0 ? Math.max(...numeros) : 0;
-      const codigo = `P${String(max + 1).padStart(3, '0')}`;
+      const codigo_produto = `P${String(max + 1).padStart(3, '0')}`;
 
       // Map variáveis to num_variaveis for DB storage
       const insertData = { ...dados, empresa_id };
@@ -46,10 +46,10 @@ Deno.serve(async (req) => {
 
       if (insertError) return Response.json({ error: insertError.message, code: insertError.code }, { status: 400 });
 
-      // Step 2: update with our custom codigo
+      // Step 2: update with our custom codigo_produto
       const { data, error: updateError } = await supabase
         .from('produto_comercial')
-        .update({ codigo })
+        .update({ codigo_produto })
         .eq('id', inserted.id)
         .select()
         .single();
@@ -57,11 +57,11 @@ Deno.serve(async (req) => {
       if (updateError) return Response.json({ error: updateError.message, code: updateError.code }, { status: 400 });
 
       // Step 3: Se num_variaveis >= 2, marca tipo_produto = 'composto' em tabela_precos_sync
-      if (insertData.num_variaveis >= 2 && codigo) {
+      if (insertData.num_variaveis >= 2 && codigo_produto) {
         await supabase
           .from('tabela_precos_sync')
           .update({ tipo_produto: 'composto' })
-          .eq('codigo_produto', codigo)
+          .eq('codigo_produto', codigo_produto)
           .eq('empresa_id', empresa_id);
       }
 
@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
 
     if (action === 'update_produto') {
       // Only allow known DB columns to prevent PGRST204 errors
-      const ALLOWED_FIELDS = ['nome_produto', 'descricao', 'status', 'num_variaveis', 'deleted_at', 'codigo'];
+      const ALLOWED_FIELDS = ['nome_produto', 'descricao', 'status', 'num_variaveis', 'deleted_at', 'codigo_produto'];
       const updateData = {};
       ALLOWED_FIELDS.forEach(f => { if (dados[f] !== undefined) updateData[f] = dados[f]; });
       if (dados['variáveis']) updateData.num_variaveis = dados['variáveis'];
@@ -85,17 +85,17 @@ Deno.serve(async (req) => {
       if (error) return Response.json({ error: error.message }, { status: 400 });
 
       // Se num_variaveis >= 2, marca tipo_produto = 'composto' em tabela_precos_sync
-      if (updateData.num_variaveis >= 2 && data?.codigo) {
+      if (updateData.num_variaveis >= 2 && data?.codigo_produto) {
         await supabase
           .from('tabela_precos_sync')
           .update({ tipo_produto: 'composto' })
-          .eq('codigo_produto', data.codigo)
+          .eq('codigo_produto', data.codigo_produto)
           .eq('empresa_id', data.empresa_id);
-      } else if (updateData.num_variaveis === 1 && data?.codigo) {
+      } else if (updateData.num_variaveis === 1 && data?.codigo_produto) {
         await supabase
           .from('tabela_precos_sync')
           .update({ tipo_produto: 'simples' })
-          .eq('codigo_produto', data.codigo)
+          .eq('codigo_produto', data.codigo_produto)
           .eq('empresa_id', data.empresa_id);
       }
 
@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
         .select('*')
         .eq('empresa_id', empresa_id)
         .is('deleted_at', null)
-        .order('codigo', { ascending: true, nullsFirst: false });
+        .order('codigo_produto', { ascending: true, nullsFirst: false });
 
       if (error) return Response.json({ error: error.message }, { status: 400 });
       // Map num_variaveis back to variáveis for frontend
@@ -131,12 +131,12 @@ Deno.serve(async (req) => {
       if (error) return Response.json({ error: error.message }, { status: 400 });
 
       // Sincronizar produto após criar artigo
-      const { data: produtoData } = await supabase.from('produto_comercial').select('codigo').eq('id', dados.produto_id).single();
-      if (produtoData?.codigo) {
+      const { data: produtoData } = await supabase.from('produto_comercial').select('codigo_produto').eq('id', dados.produto_id).single();
+      if (produtoData?.codigo_produto) {
         console.log('[create_artigo] dados inseridos:', { vinculo_id, codigo_unico, variavel_index });
         const syncRes = await base44.asServiceRole.functions.invoke('sincronizarTabelaPrecos', {
           empresa_id,
-          codigo_produto: produtoData.codigo,
+          codigo_produto: produtoData.codigo_produto,
         });
         console.log('[create_artigo] sincronizado:', syncRes.data?.success || false);
       }
@@ -206,11 +206,11 @@ Deno.serve(async (req) => {
 
       // Sincronizar produto
       if (artigoData?.produto_id) {
-        const { data: produtoData } = await supabase.from('produto_comercial').select('codigo').eq('id', artigoData.produto_id).single();
-        if (produtoData?.codigo) {
+        const { data: produtoData } = await supabase.from('produto_comercial').select('codigo_produto').eq('id', artigoData.produto_id).single();
+        if (produtoData?.codigo_produto) {
           const syncRes = await base44.asServiceRole.functions.invoke('sincronizarTabelaPrecos', {
             empresa_id,
-            codigo_produto: produtoData.codigo,
+            codigo_produto: produtoData.codigo_produto,
           });
           console.log('[delete_artigo] sincronizado:', syncRes.data?.success || false);
         }
@@ -403,8 +403,8 @@ Deno.serve(async (req) => {
       if (!empresa_id) return Response.json({ error: 'empresa_id obrigatório' }, { status: 400 });
 
       // Buscar produto para obter o código
-      const { data: produtoRow } = await supabase.from('produto_comercial').select('codigo, num_variaveis').eq('id', produto_id).single();
-      const codigoProduto = produtoRow?.codigo;
+      const { data: produtoRow } = await supabase.from('produto_comercial').select('codigo_produto, num_variaveis').eq('id', produto_id).single();
+      const codigoProduto = produtoRow?.codigo_produto;
       const numVariaveis = produtoRow?.num_variaveis || 1;
 
       // Nova rota: composicoes array enviado diretamente pelo frontend

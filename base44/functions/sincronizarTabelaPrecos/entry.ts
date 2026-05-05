@@ -45,8 +45,8 @@ Deno.serve(async (req) => {
       { data: valores },
     ] = await Promise.all([
       (() => {
-        let q = supabase.from('produto_comercial').select('id, codigo, nome_produto, num_variaveis').eq('empresa_id', empresa_id).is('deleted_at', null);
-        if (codigo_produto) q = q.eq('codigo', codigo_produto);
+        let q = supabase.from('produto_comercial').select('id, codigo_produto, nome_produto, num_variaveis').eq('empresa_id', empresa_id).is('deleted_at', null);
+        if (codigo_produto) q = q.eq('codigo_produto', codigo_produto);
         return q;
       })(),
       (() => {
@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
       if (artigosDoProduto.length === 0) {
         const composicoesJson = montarComposicoesJson('', false);
         const consumo_un = parseFloat(composicoesJson.reduce((s, c) => s + (c.valor_total || 0), 0).toFixed(3));
-        const chave_equivalencia = await gerarChaveEquivalencia(produto.codigo || '', '');
+        const chave_equivalencia = await gerarChaveEquivalencia(produto.codigo_produto || '', '');
         const isCompostoProd = (produto.num_variaveis || 1) >= 2;
         registros.push({
           empresa_id,
@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
         for (const artigo of artigosDoProduto) {
           const vinculo = vinculosMap[artigo.vinculo_id] || {};
           const descricao_artigo = [vinculo.artigo_nome, vinculo.cor_nome, vinculo.linha_nome].filter(Boolean).join(' | ');
-          const chave_equivalencia = await gerarChaveEquivalencia(produto.codigo || '', descricao_artigo);
+          const chave_equivalencia = await gerarChaveEquivalencia(produto.codigo_produto || '', descricao_artigo);
           const composicoesJson = montarComposicoesJson(descricao_artigo, true);
           const isComposto = (produto.num_variaveis || 1) >= 2;
           let consumo_un;
@@ -166,7 +166,7 @@ Deno.serve(async (req) => {
           registros.push({
             empresa_id,
             produto_id: produto.id,
-            codigo_produto: produto.codigo || '',
+            codigo_produto: produto.codigo_produto || '',
             nome_produto: produto.nome_produto,
             codigo_unico: artigo.codigo_unico || null,
             artigo_nome: vinculo.artigo_nome || null,
