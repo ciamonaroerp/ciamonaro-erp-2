@@ -314,8 +314,8 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
   });
 
   // Retorna o status persistido do artigo (produto_comercial_artigo.status_rendimento)
-  const getStatus = (artigo_id) => {
-    const artigo = todosArtigos.find(a => a.id === artigo_id);
+  const getStatus = (produto_id, vinculo_id) => {
+    const artigo = todosArtigos.find(a => a.produto_id === produto_id && a.vinculo_id === vinculo_id);
     return artigo?.status_rendimento || 'pendente';
   };
 
@@ -423,10 +423,8 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
   const PRIORIDADE_STATUS = { pendente: 0, sincronizar: 1, pronto: 2 };
   const linhasOrdenadas = useMemo(() => {
     return [...linhasFiltradas].sort((a, b) => {
-      const artA = todosArtigos.find(art => art.produto_id === a.produto.id && art.vinculo_id === a.vinculo_id);
-      const artB = todosArtigos.find(art => art.produto_id === b.produto.id && art.vinculo_id === b.vinculo_id);
-      const sa = PRIORIDADE_STATUS[artA ? getStatus(artA.id) : 'pendente'] ?? 2;
-      const sb = PRIORIDADE_STATUS[artB ? getStatus(artB.id) : 'pendente'] ?? 2;
+      const sa = PRIORIDADE_STATUS[getStatus(a.produto.id, a.vinculo_id)] ?? 2;
+      const sb = PRIORIDADE_STATUS[getStatus(b.produto.id, b.vinculo_id)] ?? 2;
       return sa - sb;
     });
   }, [linhasFiltradas, todosArtigos]);
@@ -445,14 +443,12 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
   }
 
   const allItems = linhasPagina.map(({ produto: p, vinculo_id, artigo_nome }) => {
-    const artigoMatch = todosArtigos.find(a => a.produto_id === p.id && a.vinculo_id === vinculo_id);
     return {
       key: `${p.id}|${vinculo_id}`,
       produto: p,
       vinculo_id,
       artigo_nome,
-      artigo_id: artigoMatch?.id,
-      type: artigoMatch ? getStatus(artigoMatch.id) : 'pendente',
+      type: getStatus(p.id, vinculo_id),
     };
   });
 
@@ -496,6 +492,7 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
                 const { produto: p, vinculo_id, artigo_nome, type } = row;
                 const artigoMatch = todosArtigos.find(a => a.produto_id === p.id && a.vinculo_id === vinculo_id);
                 const artigo_codigo = artigoMatch?.artigo_codigo || null;
+                const statusAtualizado = artigoMatch?.status_rendimento || type;
 
                 return (
                   <tr
@@ -503,7 +500,7 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
                     className="border-b border-slate-200 hover:bg-slate-50"
                   >
                     <td className="px-2 py-3 text-center">
-                      {type === "pendente" ? (
+                      {statusAtualizado === "pendente" ? (
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <span><AlertTriangle className="h-4 w-4 text-amber-500" /></span>
@@ -517,11 +514,11 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
                     <td className="px-4 py-3 text-slate-600 text-sm">{artigo_nome || <span className="text-slate-400">—</span>}</td>
                     <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{formatSinc(ultimaSincMap[p.id])}</td>
                     <td className="px-4 py-3 text-center text-sm">
-                      {type === 'pendente' ? (
+                      {statusAtualizado === 'pendente' ? (
                         <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
                           Pendente
                         </span>
-                      ) : type === 'sincronizar' ? (
+                      ) : statusAtualizado === 'sincronizar' ? (
                         <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
                           Sincronizar
                         </span>

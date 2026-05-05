@@ -99,6 +99,7 @@ async function createArtigo(empresa_id, produto_id, artigoData, createdBy) {
       cor_nome: artigoData.cor_nome,
       linha_nome: artigoData.linha_nome,
       variavel_index: artigoData.variavel_index ?? 1,
+      status_rendimento: "pendente",
     })
     .select()
     .single();
