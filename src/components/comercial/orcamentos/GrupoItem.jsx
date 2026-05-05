@@ -191,7 +191,8 @@ export default function GrupoItem({ grupo, onEditar, onExcluir, readOnly = false
               {primeiro.acabamentos.map(a => a?.descricao || a?.nome_acabamento || String(a)).join(", ")}
             </span>
           )}
-          {hasPersonalizacoes && (
+          {/* Personalização: só exibe aqui se NÃO for Produto e Serviço (para PS aparece na linha de rateio) */}
+          {hasPersonalizacoes && !isProdutoServico && (
             <span className="text-slate-500">
               <span className="font-medium text-slate-600">Personalização: </span>
               {primeiro.personalizacoes.map(p => {
@@ -238,7 +239,7 @@ export default function GrupoItem({ grupo, onEditar, onExcluir, readOnly = false
             <>
               <span className="text-slate-400">|</span>
               <span className="text-slate-500">
-                <span className="font-medium text-slate-600">Personalização: </span>
+                <span className="font-medium text-purple-600">Serviço de Personalização: </span>
                 {primeiro.personalizacoes.map(p => {
                   const desc = p?.descricao || p?.tipo_personalizacao || String(p);
                   const partes = [];
