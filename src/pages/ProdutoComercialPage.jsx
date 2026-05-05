@@ -374,7 +374,9 @@ export default function ProdutoComercialPage() {
 
     try {
       if (editingId) {
-        await editarMutation.mutateAsync({ id: editingId, d: formData });
+        // Remove campo local 'variáveis' (com acento) — não existe no banco; o campo real é num_variaveis
+        const { variáveis: _v, ...dadosParaSalvar } = formData;
+        await editarMutation.mutateAsync({ id: editingId, d: dadosParaSalvar });
         await saveComposicaoMutation.mutateAsync({ produto_id: editingId, composicoes_por_variavel: composicoesPorVariavel });
 
         // Salva consumo/custo e indice na tabela_precos_sync
@@ -402,7 +404,8 @@ export default function ProdutoComercialPage() {
         await qc.invalidateQueries({ queryKey: ["produto-comercial", empresa_id] });
         closeModal();
       } else {
-        criarMutation.mutate(formData);
+        const { variáveis: _v2, ...dadosCriar } = formData;
+        criarMutation.mutate(dadosCriar);
       }
     } catch (err) {
       showError({ title: "Erro ao salvar", description: err?.message || "Erro desconhecido" });
