@@ -132,8 +132,9 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
       return { data: { data: [data] } };
     },
     onSuccess: async (_, { editId }) => {
+      // Remove cache antigo e força refetch garantindo filtro deleted_at
+      qc.removeQueries({ queryKey: ["orcamento-itens", idLocal], exact: true });
       await qc.refetchQueries({ queryKey: ["orcamento-itens", idLocal], exact: true });
-      // Nunca fecha o modal automaticamente — o usuário vê a aba Valores e fecha manualmente
       toast.success(editId ? "Item atualizado com sucesso." : "Item adicionado com sucesso.");
     },
     onError: (err, { editId }) => {
@@ -152,6 +153,8 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
+      // Remove cache antigo e força refetch para garantir que o item deletado suma imediatamente
+      qc.removeQueries({ queryKey: ["orcamento-itens", idLocal], exact: true });
       qc.refetchQueries({ queryKey: ["orcamento-itens", idLocal], exact: true });
       setDeleteTarget(null);
       toast.success("Item excluído com sucesso.");
@@ -266,6 +269,8 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
   const fecharModal = () => {
     setModalTipo(null);
     setItemEdicao(null);
+    // Invalida e força refetch imediato, garantindo que itens deletados não apareçam
+    qc.removeQueries({ queryKey: ["orcamento-itens", idLocal], exact: true });
     qc.refetchQueries({ queryKey: ["orcamento-itens", idLocal], exact: true });
   };
 

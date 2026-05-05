@@ -23,6 +23,7 @@ export function useOrcamentoItens(orcamentoId) {
 export function useInvalidateOrcamentoItens() {
   const qc = useQueryClient();
   return (orcamentoId) => {
-    qc.invalidateQueries(["orcamento-itens", orcamentoId]);
+    qc.removeQueries({ queryKey: ["orcamento-itens", orcamentoId], exact: true });
+    qc.refetchQueries({ queryKey: ["orcamento-itens", orcamentoId], exact: true });
   };
 }

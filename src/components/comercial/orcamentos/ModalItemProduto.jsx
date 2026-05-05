@@ -800,7 +800,10 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
       if (error) throw error;
       setItemAtualizado(data);
       setForm(prev => ({ ...prev, valor_unitario: fmtMoeda(valorUnitario), subtotal: fmtMoeda(subtotal) }));
-      if (orcamentoId) await qc.refetchQueries({ queryKey: ["orcamento-itens", orcamentoId], exact: true });
+      if (orcamentoId) {
+        qc.removeQueries({ queryKey: ["orcamento-itens", orcamentoId], exact: true });
+        await qc.refetchQueries({ queryKey: ["orcamento-itens", orcamentoId], exact: true });
+      }
       onClose();
     } catch (err) {
       showError({ title: "Erro ao salvar valores", description: err.message });
@@ -922,8 +925,9 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
       setItemDirty(false);
       setActiveTab("valores");
 
-      // 3️⃣ REFETCH ITENS (força busca imediata com filtro deleted_at)
+      // 3️⃣ REMOVE CACHE E FORÇA REFETCH (garante que itens deletados nunca apareçam)
       if (orcamentoId) {
+        qc.removeQueries({ queryKey: ["orcamento-itens", orcamentoId], exact: true });
         await qc.refetchQueries({ queryKey: ["orcamento-itens", orcamentoId], exact: true });
       }
     } catch (err) {
