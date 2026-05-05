@@ -215,16 +215,18 @@ export default function ProdutoComercialPage() {
   });
 
   const composicoesQuery = useQuery({
-    queryKey: ["produto-composicao", editingId],
+    queryKey: ["produto-composicao", editingId, empresa_id],
     queryFn: async () => {
-      if (!editingId) return [];
-      const { data } = await supabase
+      if (!editingId || !empresa_id) return [];
+      const { data, error } = await supabase
         .from('produto_composicao')
         .select('*')
-        .eq('produto_id', editingId);
+        .eq('produto_id', editingId)
+        .eq('empresa_id', empresa_id);
+      console.log('[composicoesQuery] data:', data, 'error:', error);
       return data || [];
     },
-    enabled: !!editingId && !!modalOpen,
+    enabled: !!editingId && !!modalOpen && !!empresa_id,
     staleTime: 0,
   });
 
@@ -238,12 +240,14 @@ export default function ProdutoComercialPage() {
     // Aguarda os dados estarem disponíveis (não apenas undefined inicial)
     if (!composicoesQuery.isSuccess) return;
     const lista = composicoesVinculadas || [];
+    console.log('[Composicoes] editingId:', editingId, '| dados:', lista);
     const mapa = {};
     lista.forEach(c => {
       const idx = c.variavel_index ?? 1;
       if (!mapa[idx]) mapa[idx] = [];
       mapa[idx].push(String(c.rendimento_id));
     });
+    console.log('[Composicoes] mapa gerado:', mapa);
     setComposicoesPorVariavel(mapa);
   }, [editingId, modalOpen, composicoesVinculadas, composicoesQuery.isSuccess])
 
