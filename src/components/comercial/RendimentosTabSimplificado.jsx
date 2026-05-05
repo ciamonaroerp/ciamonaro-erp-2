@@ -388,12 +388,19 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
     
     // Atualiza status do artigo para "pronto"
     try {
-      const { error } = await supabase
+      let query = supabase
         .from('produto_comercial_artigo')
         .update({ status_rendimento: 'pronto' })
         .eq('produto_id', editingProduto.id)
-        .eq('empresa_id', empresa_id)
-        .eq('vinculo_id', editingProduto.vinculo_id || null);
+        .eq('empresa_id', empresa_id);
+      
+      if (editingProduto.vinculo_id) {
+        query = query.eq('vinculo_id', editingProduto.vinculo_id);
+      } else {
+        query = query.is('vinculo_id', null);
+      }
+      
+      const { error } = await query;
       
       if (error) {
         showError({ title: "Erro ao atualizar status", description: error.message });
