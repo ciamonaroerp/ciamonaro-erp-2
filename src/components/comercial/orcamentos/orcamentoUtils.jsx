@@ -108,7 +108,22 @@ export function gerarTextoWhatsApp({ orcamento, itens = [], extra = {} }) {
       txt += `\n• ${seqWpp}*${primeiro.quantidade} un.* ${nome}\n`;
       if (primeiro.resumo_composicoes) txt += `  Composição: ${primeiro.resumo_composicoes}\n`;
       if (primeiro.tipo_item === "Produto e Serviço") {
-        txt += `  Produto ${primeiro.produto_percentual}% / Serviço ${primeiro.servico_percentual}%\n`;
+        const vlrProdutoWpp = (parseFloat(primeiro.produto_percentual) / 100) * parseFloat(primeiro.valor_unitario);
+        const vlrServicoWpp = (parseFloat(primeiro.servico_percentual) / 100) * parseFloat(primeiro.valor_unitario);
+        const hasPersonalizacoesWpp = Array.isArray(primeiro.personalizacoes) && primeiro.personalizacoes.length > 0;
+        txt += `  📦 Produto (${primeiro.produto_percentual}%): ${primeiro.quantidade} × R$ ${fmtMoeda(vlrProdutoWpp)} = R$ ${fmtMoeda(primeiro.quantidade * vlrProdutoWpp)}\n`;
+        if (hasPersonalizacoesWpp) {
+          const persDescWpp = primeiro.personalizacoes.map(p => {
+            const desc = p?.descricao || p?.tipo_personalizacao || String(p);
+            const pts = [];
+            if (p?.cores) pts.push(`${p.cores} cor${p.cores > 1 ? "es" : ""}`);
+            if (p?.posicoes) pts.push(`${p.posicoes} posição${p.posicoes > 1 ? "ões" : ""}`);
+            return pts.length > 0 ? `${desc} (${pts.join(", ")})` : desc;
+          }).join(" | ");
+          txt += `  🎨 Serviço de Personalização (${primeiro.servico_percentual}%): ${persDescWpp} — ${primeiro.quantidade} × R$ ${fmtMoeda(vlrServicoWpp)} = R$ ${fmtMoeda(primeiro.quantidade * vlrServicoWpp)}\n`;
+        } else {
+          txt += `  🔧 Serviço (${primeiro.servico_percentual}%): ${primeiro.quantidade} × R$ ${fmtMoeda(vlrServicoWpp)} = R$ ${fmtMoeda(primeiro.quantidade * vlrServicoWpp)}\n`;
+        }
       }
       // Linhas de tecido por índice
       grupo.forEach(item => {
@@ -122,8 +137,8 @@ export function gerarTextoWhatsApp({ orcamento, itens = [], extra = {} }) {
         const acbTexto = primeiro.acabamentos.map(a => a?.descricao || a?.nome_acabamento || String(a)).join(", ");
         txt += `  Acabamentos: ${acbTexto}\n`;
       }
-      // Personalizações
-      if (Array.isArray(primeiro.personalizacoes) && primeiro.personalizacoes.length > 0) {
+      // Personalizações — exibe avulso apenas se NÃO for Produto e Serviço (neste caso já está no rateio)
+      if (Array.isArray(primeiro.personalizacoes) && primeiro.personalizacoes.length > 0 && primeiro.tipo_item !== "Produto e Serviço") {
         const persTexto = primeiro.personalizacoes.map(p => {
           const desc = p?.descricao || p?.tipo_personalizacao || String(p);
           const partes = [];
@@ -237,7 +252,8 @@ function renderGrupoPDF(primeiro, itensOrdenados) {
       const acbStr = primeiro.acabamentos.map(a => a?.descricao || a?.nome_acabamento || String(a)).join(", ");
       detalhesPartes.push(`<span style="white-space:nowrap"><strong style="color:#64748b">Acabamentos:</strong> ${acbStr}</span>`);
     }
-    if (temPersonalizacoes) {
+    // Exibe personalização avulsa apenas se NÃO for Produto e Serviço (neste caso aparece integrada no rateio)
+    if (temPersonalizacoes && !isProdutoServico) {
       const persStr = primeiro.personalizacoes.map(p => {
         const desc = p?.descricao || p?.tipo_personalizacao || String(p);
         const pts = [];
@@ -265,11 +281,27 @@ function renderGrupoPDF(primeiro, itensOrdenados) {
     if (isProdutoServico) {
       const vlrProduto = (parseFloat(primeiro.produto_percentual) / 100) * parseFloat(primeiro.valor_unitario);
       const vlrServico = (parseFloat(primeiro.servico_percentual) / 100) * parseFloat(primeiro.valor_unitario);
+      const hasPersonalizacoes = Array.isArray(primeiro.personalizacoes) && primeiro.personalizacoes.length > 0;
+
+      let servicoSpan = "";
+      if (hasPersonalizacoes) {
+        const persDesc = primeiro.personalizacoes.map(p => {
+          const desc = p?.descricao || p?.tipo_personalizacao || String(p);
+          const pts = [];
+          if (p?.cores) pts.push(`${p.cores} cor${p.cores > 1 ? "es" : ""}`);
+          if (p?.posicoes) pts.push(`${p.posicoes} posição${p.posicoes > 1 ? "ões" : ""}`);
+          return pts.length > 0 ? `${desc} (${pts.join(", ")})` : desc;
+        }).join(" | ");
+        servicoSpan = `<span><strong style="color:#7c3aed">Serviço de Personalização (${primeiro.servico_percentual}%):</strong> ${persDesc} — ${primeiro.quantidade} × R$ ${fmtMoeda(vlrServico)} = <strong>R$ ${fmtMoeda(primeiro.quantidade * vlrServico)}</strong></span>`;
+      } else {
+        servicoSpan = `<span><strong>Serviço (${primeiro.servico_percentual}%):</strong> ${primeiro.quantidade} × R$ ${fmtMoeda(vlrServico)} = <strong>R$ ${fmtMoeda(primeiro.quantidade * vlrServico)}</strong></span>`;
+      }
+
       rateioRow = `
-        <div style="margin-top:4px;display:flex;gap:16px;font-size:11px;color:#374151">
+        <div style="margin-top:4px;display:flex;gap:16px;font-size:11px;color:#374151;flex-wrap:wrap">
           <span><strong>Produto (${primeiro.produto_percentual}%):</strong> ${primeiro.quantidade} × R$ ${fmtMoeda(vlrProduto)} = <strong>R$ ${fmtMoeda(primeiro.quantidade * vlrProduto)}</strong></span>
           <span style="color:#94a3b8">|</span>
-          <span><strong>Serviço (${primeiro.servico_percentual}%):</strong> ${primeiro.quantidade} × R$ ${fmtMoeda(vlrServico)} = <strong>R$ ${fmtMoeda(primeiro.quantidade * vlrServico)}</strong></span>
+          ${servicoSpan}
         </div>`;
     }
 
