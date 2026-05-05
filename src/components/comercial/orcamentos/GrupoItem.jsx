@@ -230,16 +230,23 @@ export default function GrupoItem({ grupo, onEditar, onExcluir, readOnly = false
             <span className="font-medium text-blue-600">Produto ({primeiro.produto_percentual}%): </span>
             {primeiro.quantidade} × R$ {fmtMoeda(vlrProduto)} = <strong>R$ {fmtMoeda(primeiro.quantidade * vlrProduto)}</strong>
           </span>
-          <span className="text-slate-400">|</span>
-          <span className="text-slate-500">
-            <span className="font-medium text-purple-600">Serviço ({primeiro.servico_percentual}%): </span>
-            {primeiro.quantidade} × R$ {fmtMoeda(vlrServico)} = <strong>R$ {fmtMoeda(primeiro.quantidade * vlrServico)}</strong>
-          </span>
+          {!hasPersonalizacoes && (
+            <>
+              <span className="text-slate-400">|</span>
+              <span className="text-slate-500">
+                <span className="font-medium text-purple-600">Serviço ({primeiro.servico_percentual}%): </span>
+                {primeiro.quantidade} × R$ {fmtMoeda(vlrServico)} = <strong>R$ {fmtMoeda(primeiro.quantidade * vlrServico)}</strong>
+              </span>
+            </>
+          )}
           {hasPersonalizacoes && (
             <>
               <span className="text-slate-400">|</span>
               <span className="text-slate-500">
-                <span className="font-medium text-purple-600">Serviço de Personalização: </span>
+                <span className="font-medium text-purple-600">
+                  Serviço de Personalização ({primeiro.servico_percentual}%):
+                </span>
+                {" "}
                 {primeiro.personalizacoes.map(p => {
                   const desc = p?.descricao || p?.tipo_personalizacao || String(p);
                   const partes = [];
@@ -247,6 +254,8 @@ export default function GrupoItem({ grupo, onEditar, onExcluir, readOnly = false
                   if (p?.posicoes) partes.push(`${p.posicoes} posição${p.posicoes > 1 ? 'ões' : ''}`);
                   return partes.length > 0 ? `${desc} (${partes.join(", ")})` : desc;
                 }).join(" | ")}
+                {" — "}
+                {primeiro.quantidade} × R$ {fmtMoeda(vlrServico)} = <strong>R$ {fmtMoeda(primeiro.quantidade * vlrServico)}</strong>
               </span>
             </>
           )}
