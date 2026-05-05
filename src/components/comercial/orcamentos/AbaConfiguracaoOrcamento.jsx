@@ -235,6 +235,7 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
     const result = await salvarMutation.mutateAsync({ 
       payload: { 
         ...payload, 
+        empresa_id: empresaId,
         soma_itens_adicionais: somaItensAdicionais,
         custo_acabamento: custoAcabamento,
         custo_personalizacao: custoPersonalizacao,
