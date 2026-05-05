@@ -610,7 +610,7 @@ export default function ProdutoComercialPage() {
             <div>
               <label className="text-sm font-medium text-slate-600 block mb-1">Código</label>
               <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm font-mono text-blue-700 font-semibold">
-                {editingId ? (formData.codigo || "—") : "Gerado automaticamente"}
+                {editingId ? (formData.codigo_produto || "—") : "Gerado automaticamente"}
               </div>
             </div>
 
