@@ -386,15 +386,20 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
     }
     qc.invalidateQueries(["rendimentos-valores", empresa_id]);
     
-    // Valida e atualiza status do artigo
+    // Atualiza status do artigo para "pronto"
     try {
-      await fetch(`${window.location.origin}/api/validarStatusRendimento`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ produto_id: editingProduto.id, empresa_id })
-      });
+      const { error } = await supabase
+        .from('produto_comercial_artigo')
+        .update({ status_rendimento: 'pronto' })
+        .eq('produto_id', editingProduto.id)
+        .eq('empresa_id', empresa_id)
+        .eq('vinculo_id', editingProduto.vinculo_id || null);
+      
+      if (error) {
+        showError({ title: "Erro ao atualizar status", description: error.message });
+      }
     } catch (e) {
-      console.error('Erro ao validar status:', e);
+      console.error('Erro ao atualizar status:', e);
     }
 
     qc.invalidateQueries(["rendimentos-artigos", empresa_id]);
