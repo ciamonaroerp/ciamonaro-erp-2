@@ -837,11 +837,11 @@ export default function ProdutoComercialPage() {
                           <input
                             type="number"
                             step="0.01"
-                            defaultValue={preco?.consumo_un || ''}
+                            value={(multiComposicoes.find(c => c.codigo_unico === a.codigo_unico)?.consumo_un) || (preco?.consumo_un || '')}
                             onChange={(e) => {
-                              const val = parseFloat(e.target.value) || 0;
+                              const val = e.target.value;
                               const cmp = multiComposicoes.find(c => c.codigo_unico === a.codigo_unico);
-                              if (cmp) cmp.consumo_un = val.toString();
+                              if (cmp) cmp.consumo_un = val;
                               setMultiComposicoes([...multiComposicoes]);
                             }}
                             className="w-full px-2 py-1 text-xs border border-slate-200 rounded"
@@ -853,11 +853,11 @@ export default function ProdutoComercialPage() {
                           <input
                             type="number"
                             step="0.01"
-                            defaultValue={preco?.custo_kg || ''}
+                            value={(multiComposicoes.find(c => c.codigo_unico === a.codigo_unico)?.custo_kg) || (preco?.custo_kg || '')}
                             onChange={(e) => {
-                              const val = parseFloat(e.target.value) || 0;
+                              const val = e.target.value;
                               const cmp = multiComposicoes.find(c => c.codigo_unico === a.codigo_unico);
-                              if (cmp) cmp.custo_kg = val.toString();
+                              if (cmp) cmp.custo_kg = val;
                               setMultiComposicoes([...multiComposicoes]);
                             }}
                             className="w-full px-2 py-1 text-xs border border-slate-200 rounded"
