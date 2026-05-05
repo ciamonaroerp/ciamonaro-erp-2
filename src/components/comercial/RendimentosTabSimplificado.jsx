@@ -34,7 +34,7 @@ async function invoke(action, payload) {
     return { data: { data: {} } };
   }
   if (action === 'upsert_rendimento_valor') {
-    const { empresa_id, rendimento_id, produto_id, descricao_artigo, vinculo_id, valor } = payload;
+    const { empresa_id, rendimento_id, produto_id, descricao_artigo, vinculo_id, rendimento_valor } = payload;
     // Busca por rendimento_id + produto_id + vinculo_id (chave lógica por artigo)
     const query = supabase
       .from('produto_rendimento_valores')
@@ -50,7 +50,7 @@ async function invoke(action, payload) {
     let error;
     if (existing?.id) {
       ({ error } = await supabase.from('produto_rendimento_valores')
-        .update({ valor, sincronizado: true, descricao_artigo: descricao_artigo || '', vinculo_id: vinculo_id || null })
+        .update({ rendimento_valor, sincronizado: true, descricao_artigo: descricao_artigo || '', vinculo_id: vinculo_id || null })
         .eq('id', existing.id));
     } else {
       // Verifica se existe pela constraint do banco (rendimento_id + produto_id + descricao_artigo)
@@ -63,11 +63,11 @@ async function invoke(action, payload) {
         .maybeSingle();
       if (existingByDesc?.id) {
         ({ error } = await supabase.from('produto_rendimento_valores')
-          .update({ valor, sincronizado: true, vinculo_id: vinculo_id || null })
+          .update({ rendimento_valor, sincronizado: true, vinculo_id: vinculo_id || null })
           .eq('id', existingByDesc.id));
       } else {
         ({ error } = await supabase.from('produto_rendimento_valores')
-          .insert({ empresa_id, rendimento_id, produto_id, descricao_artigo: descricao_artigo || '', vinculo_id: vinculo_id || null, valor, sincronizado: true }));
+          .insert({ empresa_id, rendimento_id, produto_id, descricao_artigo: descricao_artigo || '', vinculo_id: vinculo_id || null, rendimento_valor, sincronizado: true }));
       }
     }
     if (error) return { data: { error: error.message } };
@@ -211,7 +211,7 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
     for (const v of valores) {
       const vid = v.vinculo_id || '';
       // Indexa estritamente por vinculo_id para não misturar valores de artigos diferentes
-      map[`${v.rendimento_id}|${v.produto_id}|${vid}`] = v.valor;
+      map[`${v.rendimento_id}|${v.produto_id}|${vid}`] = v.rendimento_valor;
     }
     return map;
   }, [valores]);
@@ -290,12 +290,12 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
   };
 
   const upsertMutation = useMutation({
-    mutationFn: async ({ rendimento_id, produto_id, artigo_nome, vinculo_id, valor }) => {
+    mutationFn: async ({ rendimento_id, produto_id, artigo_nome, vinculo_id, rendimento_valor }) => {
       const res = await invoke('upsert_rendimento_valor', {
         empresa_id, rendimento_id, produto_id,
         descricao_artigo: artigo_nome || "",
         vinculo_id: vinculo_id || null,
-        valor,
+        rendimento_valor,
       });
       if (res.data?.error) throw new Error(res.data.error);
     },
@@ -345,10 +345,10 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
     const freshMap = {};
     for (const v of valoresFrescos) {
       const vid2 = v.vinculo_id || '';
-      freshMap[`${v.rendimento_id}|${v.produto_id}|${vid2}`] = v.valor;
+      freshMap[`${v.rendimento_id}|${v.produto_id}|${vid2}`] = v.rendimento_valor;
       // Também indexa com string vazia para fallback
       if (vid2 !== '' && freshMap[`${v.rendimento_id}|${v.produto_id}|`] == null) {
-        freshMap[`${v.rendimento_id}|${v.produto_id}|`] = v.valor;
+        freshMap[`${v.rendimento_id}|${v.produto_id}|`] = v.rendimento_valor;
       }
     }
 
@@ -381,8 +381,8 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
     }
 
     for (const rid of allRids) {
-      const valor = parseValInput(rendInputs[rid] || "0");
-      await upsertMutation.mutateAsync({ rendimento_id: rid, produto_id: editingProduto.id, artigo_nome: editingProduto.artigo_nome, vinculo_id: editingProduto.vinculo_id || null, valor });
+      const rendimento_valor = parseValInput(rendInputs[rid] || "0");
+      await upsertMutation.mutateAsync({ rendimento_id: rid, produto_id: editingProduto.id, artigo_nome: editingProduto.artigo_nome, vinculo_id: editingProduto.vinculo_id || null, rendimento_valor });
     }
     qc.invalidateQueries(["rendimentos-valores", empresa_id]);
     
