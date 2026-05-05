@@ -285,13 +285,26 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
     staleTime: 30000,
   });
 
-  // Retorna: 'pendente' | 'pronto' baseado na existência de valores > 0
+  // Retorna: 'pendente' | 'pronto'
+  // Pendente se: sem valores, ou se qualquer rendimento obrigatório (da composição) for zero
   const getStatus = (produto_id, vinculo_id) => {
     const valoresDoP = valores.filter(v => v.produto_id === produto_id && !v.deleted_at);
     if (valoresDoP.length === 0) return 'pendente';
-    // Tem valores cadastrados = pronto (independente de sincronizado)
-    const temValorPositivo = valoresDoP.some(v => parseFloat(v.valor) > 0);
-    return temValorPositivo ? 'pronto' : 'pendente';
+
+    // Verifica se todos os rendimentos vinculados à composição têm valor > 0
+    const grupo = getComposicoesDoProduto(produto_id);
+    const ridsObrigatorios = Object.values(grupo).flat().filter(rid => !!rendimentosMap[rid]);
+    if (ridsObrigatorios.length === 0) {
+      // Sem composição definida, verifica apenas se tem algum valor positivo
+      return valoresDoP.some(v => parseFloat(v.valor) > 0) ? 'pronto' : 'pendente';
+    }
+
+    // Pendente se qualquer rendimento da composição tiver valor 0 ou ausente
+    const temZero = ridsObrigatorios.some(rid => {
+      const v = valoresDoP.find(val => val.rendimento_id === rid);
+      return !v || parseFloat(v.valor) === 0;
+    });
+    return temZero ? 'pendente' : 'pronto';
   };
 
   const temValores = (produto_id, vinculo_id) => getStatus(produto_id, vinculo_id) !== 'pendente';
