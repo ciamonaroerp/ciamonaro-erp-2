@@ -3,7 +3,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { produto_id, empresa_id } = await req.json();
+    const body = await req.json();
+    const { produto_id, empresa_id } = body;
 
     if (!produto_id || !empresa_id) {
       return Response.json({ error: 'produto_id e empresa_id obrigatórios' }, { status: 400 });
