@@ -47,7 +47,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
     supabase.from('config_vinculos').select('id, artigo_nome, cor_nome, linha_nome').eq('empresa_id', empresa_id),
     supabase.from('produto_composicao').select('produto_id, rendimento_id, variavel_index').eq('empresa_id', empresa_id),
     supabase.from('produto_rendimentos').select('id, nome').eq('empresa_id', empresa_id).is('deleted_at', null),
-    supabase.from('produto_rendimento_valores').select('produto_id, rendimento_id, rendimento_valor, valor, descricao_artigo, vinculo_id').eq('empresa_id', empresa_id).is('deleted_at', null),
+    supabase.from('produto_rendimento_valores').select('produto_id, rendimento_id, rendimento_valor, descricao_artigo, vinculo_id').eq('empresa_id', empresa_id).is('deleted_at', null),
   ]);
 
   const vinculosMap = {};
@@ -58,7 +58,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
 
   const valoresMap = {};
   (valores || []).forEach(v => {
-    const valorNum = parseFloat(v.rendimento_valor ?? v.valor) || 0;
+    const valorNum = parseFloat(v.rendimento_valor) || 0;
     const artigo = v.descricao_artigo || '';
     valoresMap[`${v.produto_id}|${v.rendimento_id}|${artigo}`] = valorNum;
     if (v.vinculo_id) {
