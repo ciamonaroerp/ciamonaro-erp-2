@@ -35,8 +35,12 @@ Deno.serve(async (req) => {
     if (!supabaseUrl || !supabaseKey) {
       return Response.json({ error: 'Supabase não configurado' }, { status: 500 });
     }
+    // Repassa o token do usuário autenticado para respeitar RLS
+    const authHeader = req.headers.get('Authorization') || '';
+    const userToken = authHeader.replace('Bearer ', '');
     const supabase = createClient(supabaseUrl, supabaseKey, {
-      auth: { autoRefreshToken: false, persistSession: false }
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: { headers: { Authorization: `Bearer ${userToken}` } }
     });
 
     // 1. Buscar todos os dados necessários em paralelo
