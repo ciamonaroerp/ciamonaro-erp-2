@@ -30,10 +30,16 @@ Deno.serve(async (req) => {
 
     if (!empresa_id) return Response.json({ error: 'empresa_id obrigatório' }, { status: 400 });
     
-    // Normaliza categorias_tamanho para um array
-    const categoriasArray = Array.isArray(categorias_tamanho) 
-      ? categorias_tamanho 
-      : (typeof categorias_tamanho === 'string' ? JSON.parse(categorias_tamanho) : []);
+    // Normaliza categorias_tamanho para um array, filtrando valores vazios
+    let categoriasArray = [];
+    if (categorias_tamanho) {
+      if (Array.isArray(categorias_tamanho)) {
+        categoriasArray = categorias_tamanho.filter(c => c);
+      } else if (typeof categorias_tamanho === 'string') {
+        const parsed = JSON.parse(categorias_tamanho);
+        categoriasArray = (Array.isArray(parsed) ? parsed : []).filter(c => c);
+      }
+    }
 
     const supabaseUrl = Deno.env.get('VITE_SUPABASE_URL');
     const supabaseKey = Deno.env.get('VITE_SUPABASE_ANON_KEY');
@@ -117,7 +123,7 @@ Deno.serve(async (req) => {
       const composicoesDoProduto = composicoesPorProduto[produto.id] || {};
       const numComposicoes = Object.keys(composicoesDoProduto).length;
       
-      // Se categorias_tamanho foi fornecido, usa essa lista; caso contrário, usa um array com um valor nulo
+      // Se categorias_tamanho foi fornecido e tem valores, usa; caso contrário, usa [null] para um registro padrão
       const categoriasParaIterar = categoriasArray.length > 0 ? categoriasArray : [null];
 
       const montarComposicoesJson = (descricaoArtigo, temArtigos, vinculo_id_artigo) => {
