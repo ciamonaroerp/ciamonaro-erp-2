@@ -203,7 +203,8 @@ export default function ProdutoComercialPage() {
         .eq('empresa_id', empresa_id)
         .is('deleted_at', null)
         .order('categoria');
-      return (data || []).map(d => d.categoria);
+      const categorias = (data || []).map(d => d.categoria);
+      return [...new Set(categorias)];
     },
     enabled: !!empresa_id,
     staleTime: 60000,
