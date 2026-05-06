@@ -106,14 +106,19 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
     }
     setSyncingCodigo(codigo_produto);
     try {
-      // Busca dados completos do produto para enviar categorias_tamanho
-      const produtoAtual = produtos.find(p => p.codigo_produto === codigo_produto);
+      // Busca categorias_tamanho direto do banco para garantir dados atualizados
+      const { data: produtoData } = await supabase
+        .from('produto_comercial')
+        .select('categorias_tamanho')
+        .eq('codigo_produto', codigo_produto)
+        .eq('empresa_id', empresa_id)
+        .maybeSingle();
       
       await sincronizarTabelaPrecos({
         empresa_id,
         codigo_produto,
         ...(artigo_codigo ? { artigo_codigo } : {}),
-        ...(produtoAtual?.categorias_tamanho ? { categorias_tamanho: produtoAtual.categorias_tamanho } : {}),
+        ...(produtoData?.categorias_tamanho ? { categorias_tamanho: produtoData.categorias_tamanho } : {}),
       });
       qc.invalidateQueries({ queryKey: ["rendimentos-artigos", empresa_id] });
       qc.invalidateQueries({ queryKey: ["rendimentos-valores", empresa_id] });
