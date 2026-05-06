@@ -196,20 +196,15 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
     r.custo_un = (consumoNum > 0 && custoKgNum > 0) ? parseFloat((consumoNum * custoKgNum).toFixed(3)) : null;
   }
 
-  // 5. Upsert registros
-  const registrosComArtigo = registros.filter(r => r.codigo_unico);
-  const registrosSemArtigo = registros.filter(r => !r.codigo_unico);
-  const BATCH = 100;
-
-  for (let i = 0; i < registrosComArtigo.length; i += BATCH) {
-    const lote = registrosComArtigo.slice(i, i + BATCH);
-    const { error } = await supabase.from('tabela_precos_sync').upsert(lote, { onConflict: 'produto_id,codigo_unico', ignoreDuplicates: false });
-    if (error) throw new Error(error.message);
-  }
-
-  for (const reg of registrosSemArtigo) {
-    const { data: existente } = await supabase.from('tabela_precos_sync').select('id')
-      .eq('empresa_id', empresa_id).eq('produto_id', reg.produto_id).is('codigo_unico', null).maybeSingle();
+  // 5. Salvar registros via update/insert (sem dependência de constraint única)
+  for (const reg of registros) {
+    let query = supabase.from('tabela_precos_sync').select('id').eq('empresa_id', empresa_id).eq('produto_id', reg.produto_id);
+    if (reg.codigo_unico) {
+      query = query.eq('codigo_unico', reg.codigo_unico);
+    } else {
+      query = query.is('codigo_unico', null);
+    }
+    const { data: existente } = await query.maybeSingle();
     if (existente) {
       const { error } = await supabase.from('tabela_precos_sync').update(reg).eq('id', existente.id);
       if (error) throw new Error(error.message);
