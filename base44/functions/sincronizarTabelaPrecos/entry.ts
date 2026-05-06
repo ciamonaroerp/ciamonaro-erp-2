@@ -304,7 +304,7 @@ Deno.serve(async (req) => {
 
       for (let i = 0; i < registrosComArtigo.length; i += BATCH) {
         const lote = registrosComArtigo.slice(i, i + BATCH);
-        const { error: upsertError } = await supabase.from('tabela_precos_sync').upsert(lote, { onConflict: 'produto_id,codigo_unico', ignoreDuplicates: false });
+        const { error: upsertError } = await supabase.from('tabela_precos_sync').upsert(lote, { onConflict: 'produto_id,codigo_unico,categoria_tamanho_id', ignoreDuplicates: false });
         if (upsertError) return Response.json({ error: upsertError.message }, { status: 400 });
         totalUpsertados += lote.length;
       }
@@ -329,7 +329,7 @@ Deno.serve(async (req) => {
 
       for (let i = 0; i < registrosComArtigoInd.length; i += BATCH) {
         const lote = registrosComArtigoInd.slice(i, i + BATCH);
-        const { error: upsertError } = await supabase.from('tabela_precos_sync').upsert(lote, { onConflict: 'produto_id,codigo_unico', ignoreDuplicates: false });
+        const { error: upsertError } = await supabase.from('tabela_precos_sync').upsert(lote, { onConflict: 'produto_id,codigo_unico,categoria_tamanho_id', ignoreDuplicates: false });
         if (upsertError) return Response.json({ error: upsertError.message }, { status: 400 });
         totalUpsertados += lote.length;
       }
