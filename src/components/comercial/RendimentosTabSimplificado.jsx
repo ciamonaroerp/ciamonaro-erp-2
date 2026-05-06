@@ -416,8 +416,8 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
     setEditingProduto(null);
     showSuccess({ title: "Salvo", description: "Valores atualizados com sucesso." });
     
-    if (!produtoEditado.codigo) return;
-    await handleSincronizarItem(produtoEditado.codigo, produtoEditado.artigo_codigo);
+    if (!produtoEditado.codigo_produto) return;
+    await handleSincronizarItem(produtoEditado.codigo_produto, produtoEditado.artigo_codigo);
   };
 
   // Filtra por busca
@@ -561,10 +561,10 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
                               variant="ghost"
                               size="icon"
                               className="h-7 w-7 text-slate-500 hover:text-green-600 hover:bg-green-50"
-                              disabled={syncingCodigo === p.codigo}
-                              onClick={() => handleSincronizarItem(p.codigo, artigo_codigo)}
+                              disabled={syncingCodigo === p.codigo_produto}
+                              onClick={() => handleSincronizarItem(p.codigo_produto, artigo_codigo)}
                             >
-                              {syncingCodigo === p.codigo
+                              {syncingCodigo === p.codigo_produto
                                 ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                 : <RefreshCw className="h-3.5 w-3.5" />}
                             </Button>
