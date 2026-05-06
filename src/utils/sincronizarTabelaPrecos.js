@@ -80,27 +80,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
     artigosPorProduto[a.produto_id].push(a);
   });
 
-  // 1.5. Mapear categorias de tamanho (nomes → UUIDs), criando se necessário
-    const { data: categoriasDb } = await supabase.from('categorias_tamanho').select('id, nome').eq('empresa_id', empresa_id);
-    const categoriasMap = {};
-    (categoriasDb || []).forEach(c => { categoriasMap[c.nome?.toLowerCase()] = c.id; });
 
-    // Função para buscar ou criar categoria por nome
-    const obterOuCriarCategoria = async (nome) => {
-      if (!nome) return null;
-      const nomeLower = String(nome).toLowerCase();
-      if (categoriasMap[nomeLower]) return categoriasMap[nomeLower];
-      
-      // Cria nova categoria
-      const { data, error } = await supabase.from('categorias_tamanho')
-        .insert({ empresa_id, nome: String(nome).trim(), ativo: true })
-        .select('id')
-        .maybeSingle();
-      
-      if (error || !data?.id) return null;
-      categoriasMap[nomeLower] = data.id;
-      return data.id;
-    };
 
   // 2. Montar registros
     const registros = [];
@@ -151,8 +131,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
          categoriasProduct = categoriasAUsar;
        }
      }
-     // Mapeia primeiro nome da categoria para UUID (ou cria se não existir)
-     const categoria_tamanho_id = await obterOuCriarCategoria(categoriasProduct[0]);
+
 
     if (artigosDoProduto.length === 0) {
        const composicoesJson = montarComposicoesJson('', false);
@@ -167,7 +146,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
           indice: numComposicoes >= 1 ? 1 : null, custo_kg: null, custo_un: null,
           tipo_produto: isComposto ? 'composto' : 'simples',
           opcao_acabamento: produto.opcao_acabamento === true ? true : (produto.opcao_acabamento === false ? false : null),
-          categoria_tamanho_id, status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
+          status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
         });
      } else {
        for (const artigo of artigosDoProduto) {
@@ -196,7 +175,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
            custo_kg: null, custo_un: null,
            tipo_produto: isComposto ? 'composto' : 'simples',
            opcao_acabamento: produto.opcao_acabamento === true ? true : (produto.opcao_acabamento === false ? false : null),
-           categoria_tamanho_id, deleted_at: null, status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
+           deleted_at: null, status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
          });
        }
      }
