@@ -120,9 +120,20 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
     const isComposto = numVariaveis >= 2;
 
     // Detecta primeira categoria para categoria_tamanho_id
-    const categoriasProduct = Array.isArray(produto.categorias_tamanho) ? produto.categorias_tamanho : [];
+    let categoriasProduct = [];
+    if (produto.categorias_tamanho) {
+      if (typeof produto.categorias_tamanho === 'string') {
+        try {
+          categoriasProduct = JSON.parse(produto.categorias_tamanho);
+        } catch {
+          categoriasProduct = [];
+        }
+      } else if (Array.isArray(produto.categorias_tamanho)) {
+        categoriasProduct = produto.categorias_tamanho;
+      }
+    }
     const categoriaTamanhoPrimeira = categoriasProduct[0];
-    const categoria_tamanho_id = categoriaTamanhoPrimeira ? categoriasMap[categoriaTamanhoPrimeira.toLowerCase()] : null;
+    const categoria_tamanho_id = categoriaTamanhoPrimeira ? categoriasMap[String(categoriaTamanhoPrimeira).toLowerCase()] : null;
 
     if (artigosDoProduto.length === 0) {
        const composicoesJson = montarComposicoesJson('', false);
