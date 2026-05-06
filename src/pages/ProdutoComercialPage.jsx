@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { ErpTableContainer } from "@/components/design-system";
 import { sincronizarTabelaPrecos } from "@/utils/sincronizarTabelaPrecos";
 
-const EMPTY = { nome_produto: "", descricao: "", status: "Ativo", variáveis: 1, categorias_tamanho: [] };
+const EMPTY = { nome_produto: "", descricao: "", status: "Ativo", variáveis: 1, categorias_tamanho: [], opcao_acabamento: null };
 
 const CATEGORIAS_TAMANHO = ["Infantil", "Juvenil", "Adulto"];
 
@@ -423,11 +423,12 @@ export default function ProdutoComercialPage() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.nome_produto) { showError({ title: "Campo obrigatório", description: "Nome do produto é obrigatório." }); return; }
-    const numVar = parseInt(formData.variáveis) || 1;
-    if (numVar < 1) { showError({ title: "Campo obrigatório", description: "Número de variáveis deve ser no mínimo 1." }); return; }
-    const cats = Array.isArray(formData.categorias_tamanho) ? formData.categorias_tamanho : [];
-    if (cats.length === 0) { showError({ title: "Campo obrigatório", description: "Selecione ao menos uma categoria de tamanho." }); return; }
+     if (!formData.nome_produto) { showError({ title: "Campo obrigatório", description: "Nome do produto é obrigatório." }); return; }
+     const numVar = parseInt(formData.variáveis) || 1;
+     if (numVar < 1) { showError({ title: "Campo obrigatório", description: "Número de variáveis deve ser no mínimo 1." }); return; }
+     const cats = Array.isArray(formData.categorias_tamanho) ? formData.categorias_tamanho : [];
+     if (cats.length === 0) { showError({ title: "Campo obrigatório", description: "Selecione ao menos uma categoria de tamanho." }); return; }
+     if (formData.opcao_acabamento === null || formData.opcao_acabamento === undefined) { showError({ title: "Campo obrigatório", description: "Selecione a opção de acabamentos especiais." }); return; }
 
     try {
       if (editingId) {
@@ -693,34 +694,58 @@ export default function ProdutoComercialPage() {
               <Input value={formData.nome_produto || ""} onChange={e => setFormData(p => ({ ...p, nome_produto: e.target.value }))} placeholder="Ex: Camiseta Manga Curta Esportiva" />
             </div>
 
-            {/* Categorias de Tamanho */}
-            <div>
-              <label className="text-sm font-medium text-slate-900 block mb-1">
-                Categorias de Tamanho *
-                <span className="ml-1 text-xs font-normal text-slate-400">(selecione ao menos uma)</span>
-              </label>
-              <div className="flex gap-3">
-                {CATEGORIAS_TAMANHO.map(cat => {
-                  const sel = (Array.isArray(formData.categorias_tamanho) ? formData.categorias_tamanho : []).includes(cat);
-                  return (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => toggleCategoria(cat)}
-                      className={cn(
-                        "flex items-center gap-1.5 px-2.5 py-1 rounded border text-xs font-medium transition-all select-none",
-                        sel
-                          ? "bg-blue-600 border-blue-600 text-white"
-                          : "bg-white border-slate-300 text-slate-600 hover:border-blue-400 hover:bg-blue-50"
-                      )}
-                    >
-                      {sel && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
-                      {cat}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            {/* Categorias de Tamanho + Acabamentos Especiais */}
+             <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 200px' }}>
+               <div>
+                 <label className="text-sm font-medium text-slate-900 block mb-2">
+                   Categorias de Tamanho *
+                 </label>
+                 <div className="flex flex-wrap gap-2">
+                   {CATEGORIAS_TAMANHO.map(cat => {
+                     const sel = (Array.isArray(formData.categorias_tamanho) ? formData.categorias_tamanho : []).includes(cat);
+                     return (
+                       <label key={cat} className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
+                         <input
+                           type="checkbox"
+                           checked={sel}
+                           onChange={() => toggleCategoria(cat)}
+                           className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                         />
+                         <span className="text-sm font-medium text-slate-700">{cat}</span>
+                       </label>
+                     );
+                   })}
+                 </div>
+               </div>
+
+               <div>
+                 <label className="text-sm font-medium text-slate-900 block mb-2">
+                   Acabamentos Especiais *
+                 </label>
+                 <div className="flex gap-2">
+                   <label className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors flex-1">
+                     <input
+                       type="radio"
+                       name="acabamento"
+                       checked={formData.opcao_acabamento === true}
+                       onChange={() => setFormData(p => ({ ...p, opcao_acabamento: true }))}
+                       className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                     />
+                     <span className="text-sm font-medium text-slate-700">Sim</span>
+                   </label>
+                   <label className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors flex-1">
+                     <input
+                       type="radio"
+                       name="acabamento"
+                       checked={formData.opcao_acabamento === false}
+                       onChange={() => setFormData(p => ({ ...p, opcao_acabamento: false }))}
+                       className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                     />
+                     <span className="text-sm font-medium text-slate-700">Não</span>
+                   </label>
+                 </div>
+               </div>
+             </div>
 
             <div className="grid gap-4" style={{ gridTemplateColumns: 'minmax(0,80px) 1fr' }}>
               <div>
