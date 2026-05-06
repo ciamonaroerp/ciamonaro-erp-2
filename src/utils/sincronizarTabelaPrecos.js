@@ -119,16 +119,15 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
       const consumo_un = parseFloat(composicoesJson.reduce((s, c) => s + (c.valor_total || 0), 0).toFixed(3));
       const chave_equivalencia = await gerarChaveEquivalencia(produto.codigo_produto || '', '');
       registros.push({
-        empresa_id, produto_id: produto.id,
-        codigo_produto: produto.codigo_produto || '',
-        nome_produto: produto.nome_produto,
-        codigo_unico: null, artigo_nome: null, cor_nome: null, linha_nome: null,
-        num_composicoes: numComposicoes, composicoes: composicoesJson, consumo_un,
-        num_variaveis: numVariaveis,
-        indice: numComposicoes >= 1 ? 1 : null, custo_kg: null, custo_un: null,
-        tipo_produto: isComposto ? 'composto' : 'simples',
-        status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
-      });
+         empresa_id, produto_id: produto.id,
+         codigo_produto: produto.codigo_produto || '',
+         nome_produto: produto.nome_produto,
+         codigo_unico: null, artigo_nome: null, cor_nome: null, linha_nome: null,
+         composicoes: composicoesJson, consumo_un,
+         indice: numComposicoes >= 1 ? 1 : null, custo_kg: null, custo_un: null,
+         tipo_produto: isComposto ? 'composto' : 'simples',
+         status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
+       });
     } else {
       for (const artigo of artigosDoProduto) {
         const vinculo = vinculosMap[artigo.vinculo_id] || {};
@@ -151,8 +150,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
           artigo_nome: vinculo.artigo_nome || null,
           cor_nome: vinculo.cor_nome || null,
           linha_nome: vinculo.linha_nome || null,
-          num_composicoes: numComposicoes, composicoes: composicoesJson, consumo_un,
-          num_variaveis: numVariaveis,
+          composicoes: composicoesJson, consumo_un,
           indice: parseInt(artigo.variavel_index) || 1,
           custo_kg: null, custo_un: null,
           tipo_produto: isComposto ? 'composto' : 'simples',
