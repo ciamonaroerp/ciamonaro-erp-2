@@ -160,7 +160,7 @@ export default function ProdutoComercialPage() {
       if (!empresa_id) return [];
       const { data } = await supabase
         .from('tabela_precos_sync')
-        .select('produto_id, consumo_un, custo_kg')
+        .select('*')
         .eq('empresa_id', empresa_id);
       return data || [];
     },
@@ -205,7 +205,7 @@ export default function ProdutoComercialPage() {
       if (!editingId) return [];
       const { data } = await supabase
         .from('tabela_precos_sync')
-        .select('codigo_unico, artigo_nome, cor_nome, linha_nome, consumo_un, custo_kg, custo_un, rendimento_valor')
+        .select('*')
         .eq('produto_id', editingId);
       return data || [];
     },
