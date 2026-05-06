@@ -231,16 +231,19 @@ export default function ProdutoComercialPage() {
   useEffect(() => {
     const numVar = parseInt(formData.variáveis) || 1;
     if (editingId && artigosPrecosFiltered.length > 0) {
-      const existentes = artigosPrecosFiltered.map(p => ({
-        indice: 1,
-        codigo_unico: p.codigo_unico,
-        artigo_nome: p.artigo_nome,
-        cor_nome: p.cor_nome,
-        linha_nome: p.linha_nome,
-        consumo_un: p.consumo_un || "",
-        custo_kg: p.custo_kg || "",
-        custo_un: p.custo_un || "",
-      }));
+      const existentes = artigosPrecosFiltered.map(p => {
+        const artigoVinculado = artigos.find(a => a.codigo_unico === p.codigo_unico);
+        return {
+          indice: parseInt(artigoVinculado?.variavel_index) || 1,
+          codigo_unico: p.codigo_unico,
+          artigo_nome: p.artigo_nome,
+          cor_nome: p.cor_nome,
+          linha_nome: p.linha_nome,
+          consumo_un: p.consumo_un || "",
+          custo_kg: p.custo_kg || "",
+          custo_un: p.custo_un || "",
+        };
+      });
       initMultiComposicoes(numVar, existentes);
     } else if (editingId) {
       initMultiComposicoes(numVar, []);
@@ -459,7 +462,7 @@ export default function ProdutoComercialPage() {
             const custoUn = consumoVal * custoVal;
             if (existente) {
               await supabase.from('tabela_precos_sync')
-                .update({ consumo_un: consumoVal, custo_kg: custoVal, custo_un: custoUn })
+                .update({ consumo_un: consumoVal, custo_kg: custoVal, custo_un: custoUn, indice: artigo.indice || 1 })
                 .eq('id', existente.id);
             } else {
               await supabase.from('tabela_precos_sync').insert({
