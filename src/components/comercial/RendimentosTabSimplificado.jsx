@@ -118,7 +118,7 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
         empresa_id,
         codigo_produto,
         ...(artigo_codigo ? { artigo_codigo } : {}),
-        ...(produtoData?.categorias_tamanho ? { categorias_tamanho: produtoData.categorias_tamanho } : {}),
+        categorias_tamanho: produtoData?.categorias_tamanho || [],
       });
       qc.invalidateQueries({ queryKey: ["rendimentos-artigos", empresa_id] });
       qc.invalidateQueries({ queryKey: ["rendimentos-valores", empresa_id] });
