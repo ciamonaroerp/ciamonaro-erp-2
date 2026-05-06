@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 function normalizar(texto) {
@@ -30,10 +30,14 @@ Deno.serve(async (req) => {
 
     if (!empresa_id) return Response.json({ error: 'empresa_id obrigatório' }, { status: 400 });
 
-    const supabase = createClient(
-      Deno.env.get('VITE_SUPABASE_URL'),
-      Deno.env.get('SUPABASE_SERVICE_KEY')
-    );
+    const supabaseUrl = Deno.env.get('VITE_SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_KEY') || Deno.env.get('VITE_SUPABASE_ANON_KEY');
+    if (!supabaseUrl || !supabaseKey) {
+      return Response.json({ error: 'Supabase não configurado' }, { status: 500 });
+    }
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    });
 
     // 1. Buscar todos os dados necessários em paralelo
     const [
@@ -130,7 +134,7 @@ Deno.serve(async (req) => {
         registros.push({
           empresa_id,
           produto_id: produto.id,
-          codigo_produto: produto.codigo || '',
+          codigo_produto: produto.codigo_produto || '',
           nome_produto: produto.nome_produto,
           codigo_unico: null,
           artigo_nome: null,
