@@ -444,9 +444,10 @@ export default function ProdutoComercialPage() {
         // Salva consumo e custo diretamente na tabela_precos_sync
         if (artigosParaSalvar.length > 0) {
           for (const a of artigosParaSalvar) {
+            const custo_un = a.consumo_un > 0 && a.custo_kg > 0 ? parseFloat((a.consumo_un * a.custo_kg).toFixed(4)) : 0;
             const { error } = await supabase
               .from('tabela_precos_sync')
-              .update({ consumo_un: a.consumo_un, custo_kg: a.custo_kg })
+              .update({ consumo_un: a.consumo_un, custo_kg: a.custo_kg, custo_un })
               .eq('codigo_unico', a.codigo_unico)
               .eq('empresa_id', empresa_id);
             if (error) console.warn('Erro ao salvar consumo/custo:', error.message);
