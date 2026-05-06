@@ -122,7 +122,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
         nome_produto: produto.nome_produto,
         codigo_unico: null, artigo_nome: null, cor_nome: null, linha_nome: null,
         num_composicoes: numComposicoes, composicoes: composicoesJson, consumo_un,
-        indice: null, custo_kg: null, custo_un: null,
+        indice: numComposicoes >= 1 ? 1 : null, custo_kg: null, custo_un: null,
         tipo_produto: isComposto ? 'composto' : 'simples',
         status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
       });
@@ -150,7 +150,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
           cor_nome: vinculo.cor_nome || null,
           linha_nome: vinculo.linha_nome || null,
           num_composicoes: numComposicoes, composicoes: composicoesJson, consumo_un,
-          indice: isComposto ? (parseInt(artigo.variavel_index) || 1) : null,
+          indice: isComposto ? (parseInt(artigo.variavel_index) || 1) : (numComposicoes >= 1 ? 1 : null),
           custo_kg: null, custo_un: null,
           tipo_produto: isComposto ? 'composto' : 'simples',
           deleted_at: null, status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
