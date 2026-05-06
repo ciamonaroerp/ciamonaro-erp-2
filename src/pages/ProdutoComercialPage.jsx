@@ -431,13 +431,13 @@ export default function ProdutoComercialPage() {
         await editarMutation.mutateAsync({ id: editingId, d: dadosParaSalvar });
         await saveComposicaoMutation.mutateAsync({ produto_id: editingId, composicoes_por_variavel: composicoesPorVariavel });
 
-        // Salva consumo/custo e indice na tabela_precos_sync
+        // Salva consumo/custo de todos os artigos vinculados
         const artigosParaSalvar = multiComposicoes
-          .filter(c => c.codigo_unico && (parseFloat(c.consumo_un) || 0) >= 0 && (parseFloat(c.custo_kg) || 0) >= 0)
+          .filter(c => c.codigo_unico)
           .map(c => ({
             codigo_unico: c.codigo_unico,
-            consumo_un: parseFloat(c.consumo_un) || 0,
-            custo_kg: parseFloat(c.custo_kg) || 0,
+            consumo_un: parseFloat(String(c.consumo_un ?? '').replace(',', '.')) || 0,
+            custo_kg: parseFloat(String(c.custo_kg ?? '').replace(',', '.')) || 0,
             indice: parseInt(c.indice) || 1,
           }));
 

@@ -51,15 +51,15 @@ Deno.serve(async (req) => {
 
       const { error } = await supabase
         .from('tabela_precos_sync')
-        .update({
+        .upsert({
+          codigo_unico,
+          produto_id,
+          empresa_id,
           consumo_un: consumoVal,
           custo_kg: custoVal,
           custo_un: custoUn,
           indice: indiceVal,
-        })
-        .eq('codigo_unico', codigo_unico)
-        .eq('produto_id', produto_id)
-        .eq('empresa_id', empresa_id);
+        }, { onConflict: 'codigo_unico,produto_id,empresa_id', ignoreDuplicates: false });
 
       if (error) {
         console.error(`[salvarConsumoeCustoArtigos] Erro: ${error.message}`);
