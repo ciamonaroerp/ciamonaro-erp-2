@@ -203,7 +203,7 @@ export default function ProdutoComercialPage() {
       if (!editingId) return [];
       const { data } = await supabase
         .from('tabela_precos_sync')
-        .select('codigo_unico, artigo_nome, cor_nome, linha_nome, consumo_un, custo_kg, custo_un, rendimento_valor')
+        .select('codigo_unico, artigo_nome, cor_nome, linha_nome, consumo_un, custo_kg, custo_un')
         .eq('produto_id', editingId);
       return data || [];
     },
