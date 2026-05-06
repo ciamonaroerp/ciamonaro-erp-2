@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
       supabase.from('config_vinculos').select('id, artigo_nome, cor_nome, linha_nome').eq('empresa_id', empresa_id),
       supabase.from('produto_composicao').select('produto_id, rendimento_id, variavel_index').eq('empresa_id', empresa_id),
       supabase.from('produto_rendimentos').select('id, nome').eq('empresa_id', empresa_id).is('deleted_at', null),
-      supabase.from('produto_rendimento_valores').select('produto_id, rendimento_id, valor, descricao_artigo').eq('empresa_id', empresa_id).is('deleted_at', null),
+      supabase.from('produto_rendimento_valores').select('produto_id, rendimento_id, rendimento_valor, valor, descricao_artigo, vinculo_id').eq('empresa_id', empresa_id).is('deleted_at', null),
     ]);
 
     const artigos = artigosRaw;
@@ -80,8 +80,14 @@ Deno.serve(async (req) => {
 
     const valoresMap = {};
     (valores || []).forEach(v => {
+      // Suporta tanto o campo "rendimento_valor" (novo) quanto "valor" (legado)
+      const valorNum = parseFloat(v.rendimento_valor ?? v.valor) || 0;
       const artigo = v.descricao_artigo || '';
-      valoresMap[`${v.produto_id}|${v.rendimento_id}|${artigo}`] = parseFloat(v.valor) || 0;
+      valoresMap[`${v.produto_id}|${v.rendimento_id}|${artigo}`] = valorNum;
+      // Indexa também por vinculo_id para garantir compatibilidade
+      if (v.vinculo_id) {
+        valoresMap[`${v.produto_id}|${v.rendimento_id}|vinculo:${v.vinculo_id}`] = valorNum;
+      }
     });
 
     // composicoes por produto
@@ -109,7 +115,7 @@ Deno.serve(async (req) => {
       const composicoesDoProduto = composicoesPorProduto[produto.id] || {};
       const numComposicoes = Object.keys(composicoesDoProduto).length;
 
-      const montarComposicoesJson = (descricaoArtigo, temArtigos) => {
+      const montarComposicoesJson = (descricaoArtigo, temArtigos, vinculo_id_artigo) => {
         const descricaoArtigoSoNome = descricaoArtigo ? descricaoArtigo.split(' | ')[0].trim() : '';
         return Object.entries(composicoesDoProduto)
           .sort(([a], [b]) => Number(a) - Number(b))
@@ -119,6 +125,7 @@ Deno.serve(async (req) => {
               if (temArtigos) {
                 valor = valoresMap[`${produto.id}|${rid}|${descricaoArtigo}`]
                      ?? valoresMap[`${produto.id}|${rid}|${descricaoArtigoSoNome}`]
+                     ?? (vinculo_id_artigo ? valoresMap[`${produto.id}|${rid}|vinculo:${vinculo_id_artigo}`] : undefined)
                      ?? 0;
               } else {
                 valor = valoresMap[`${produto.id}|${rid}|`] ?? 0;
@@ -161,7 +168,7 @@ Deno.serve(async (req) => {
           const vinculo = vinculosMap[artigo.vinculo_id] || {};
           const descricao_artigo = [vinculo.artigo_nome, vinculo.cor_nome, vinculo.linha_nome].filter(Boolean).join(' | ');
           const chave_equivalencia = await gerarChaveEquivalencia(produto.codigo_produto || '', descricao_artigo);
-          const composicoesJson = montarComposicoesJson(descricao_artigo, true);
+          const composicoesJson = montarComposicoesJson(descricao_artigo, true, artigo.vinculo_id);
           const isComposto = (produto.num_variaveis || 1) >= 2;
           let consumo_un;
           if (isComposto) {

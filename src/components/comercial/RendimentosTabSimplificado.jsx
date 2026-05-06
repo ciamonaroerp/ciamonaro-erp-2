@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEmpresa } from "@/components/context/EmpresaContext";
 import { supabase } from "@/components/lib/supabaseClient";
+import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -105,9 +106,15 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
     }
     setSyncingCodigo(codigo_produto);
     try {
-      // Sincronização via tabela_precos_sync — sem chamada externa
-      qc.invalidateQueries(["rendimentos-status", empresa_id]);
-      showSuccess({ title: "Sincronizado", description: "Dados atualizados com sucesso." });
+      await base44.functions.invoke('sincronizarTabelaPrecos', {
+        empresa_id,
+        codigo_produto,
+        ...(artigo_codigo ? { artigo_codigo } : {}),
+      });
+      qc.invalidateQueries({ queryKey: ["rendimentos-artigos", empresa_id] });
+      qc.invalidateQueries({ queryKey: ["rendimentos-valores", empresa_id] });
+      qc.invalidateQueries({ queryKey: ["tabela-precos-sync-all", empresa_id] });
+      showSuccess({ title: "Sincronizado", description: "Tabela de preços atualizada com sucesso." });
       onSyncComplete();
     } catch (e) {
       showError({ title: "Erro ao sincronizar", description: e.message || "Erro desconhecido." });
