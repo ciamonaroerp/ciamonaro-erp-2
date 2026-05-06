@@ -26,9 +26,14 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
-    const { empresa_id, codigo_produto, artigo_codigo } = body;
+    const { empresa_id, codigo_produto, artigo_codigo, categorias_tamanho } = body;
 
     if (!empresa_id) return Response.json({ error: 'empresa_id obrigatório' }, { status: 400 });
+    
+    // Normaliza categorias_tamanho para um array
+    const categoriasArray = Array.isArray(categorias_tamanho) 
+      ? categorias_tamanho 
+      : (typeof categorias_tamanho === 'string' ? JSON.parse(categorias_tamanho) : []);
 
     const supabaseUrl = Deno.env.get('VITE_SUPABASE_URL');
     const supabaseKey = Deno.env.get('VITE_SUPABASE_ANON_KEY');
@@ -111,6 +116,9 @@ Deno.serve(async (req) => {
       const artigosDoProduto = artigosPorProduto[produto.id] || [];
       const composicoesDoProduto = composicoesPorProduto[produto.id] || {};
       const numComposicoes = Object.keys(composicoesDoProduto).length;
+      
+      // Se categorias_tamanho foi fornecido, usa essa lista; caso contrário, usa um array com um valor nulo
+      const categoriasParaIterar = categoriasArray.length > 0 ? categoriasArray : [null];
 
       const montarComposicoesJson = (descricaoArtigo, temArtigos, vinculo_id_artigo) => {
         const descricaoArtigoSoNome = descricaoArtigo ? descricaoArtigo.split(' | ')[0].trim() : '';
@@ -139,27 +147,31 @@ Deno.serve(async (req) => {
         const consumo_un = parseFloat(composicoesJson.reduce((s, c) => s + (c.valor_total || 0), 0).toFixed(3));
         const chave_equivalencia = await gerarChaveEquivalencia(produto.codigo_produto || '', '');
         const isCompostoProd = (produto.num_variaveis || 1) >= 2;
-        registros.push({
-          empresa_id,
-          produto_id: produto.id,
-          codigo_produto: produto.codigo_produto || '',
-          nome_produto: produto.nome_produto,
-          codigo_unico: null,
-          artigo_nome: null,
-          cor_nome: null,
-          linha_nome: null,
-          num_composicoes: numComposicoes,
-          composicoes: composicoesJson,
-          consumo_un,
-          indice: null,
-          custo_kg: null,
-          custo_un: null,
-          tipo_produto: isCompostoProd ? 'composto' : 'simples',
-          status: 'ativo',
-          sincronizado_em: agora,
-          updated_at: agora,
-          chave_equivalencia,
-        });
+        
+        for (const categoria_tamanho_id of categoriasParaIterar) {
+          registros.push({
+            empresa_id,
+            produto_id: produto.id,
+            codigo_produto: produto.codigo_produto || '',
+            nome_produto: produto.nome_produto,
+            codigo_unico: null,
+            artigo_nome: null,
+            cor_nome: null,
+            linha_nome: null,
+            categoria_tamanho_id,
+            num_composicoes: numComposicoes,
+            composicoes: composicoesJson,
+            consumo_un,
+            indice: null,
+            custo_kg: null,
+            custo_un: null,
+            tipo_produto: isCompostoProd ? 'composto' : 'simples',
+            status: 'ativo',
+            sincronizado_em: agora,
+            updated_at: agora,
+            chave_equivalencia,
+          });
+        }
       } else {
         for (const artigo of artigosDoProduto) {
           const vinculo = vinculosMap[artigo.vinculo_id] || {};
@@ -175,28 +187,32 @@ Deno.serve(async (req) => {
           } else {
             consumo_un = parseFloat(composicoesJson.reduce((s, c) => s + (c.valor_total || 0), 0).toFixed(3));
           }
-          registros.push({
-            empresa_id,
-            produto_id: produto.id,
-            codigo_produto: produto.codigo_produto || '',
-            nome_produto: produto.nome_produto,
-            codigo_unico: artigo.codigo_unico || null,
-            artigo_nome: vinculo.artigo_nome || null,
-            cor_nome: vinculo.cor_nome || null,
-            linha_nome: vinculo.linha_nome || null,
-            num_composicoes: numComposicoes,
-            composicoes: composicoesJson,
-            consumo_un,
-            indice: isComposto ? (parseInt(artigo.variavel_index) || 1) : null,
-            custo_kg: null,
-            custo_un: null,
-            tipo_produto: isComposto ? 'composto' : 'simples',
-            deleted_at: null,
-            status: 'ativo',
-            sincronizado_em: agora,
-            updated_at: agora,
-            chave_equivalencia,
-          });
+          
+          for (const categoria_tamanho_id of categoriasParaIterar) {
+            registros.push({
+              empresa_id,
+              produto_id: produto.id,
+              codigo_produto: produto.codigo_produto || '',
+              nome_produto: produto.nome_produto,
+              codigo_unico: artigo.codigo_unico || null,
+              artigo_nome: vinculo.artigo_nome || null,
+              cor_nome: vinculo.cor_nome || null,
+              linha_nome: vinculo.linha_nome || null,
+              categoria_tamanho_id,
+              num_composicoes: numComposicoes,
+              composicoes: composicoesJson,
+              consumo_un,
+              indice: isComposto ? (parseInt(artigo.variavel_index) || 1) : null,
+              custo_kg: null,
+              custo_un: null,
+              tipo_produto: isComposto ? 'composto' : 'simples',
+              deleted_at: null,
+              status: 'ativo',
+              sincronizado_em: agora,
+              updated_at: agora,
+              chave_equivalencia,
+            });
+          }
         }
       }
     }
