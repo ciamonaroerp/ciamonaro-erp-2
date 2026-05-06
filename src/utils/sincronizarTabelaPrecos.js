@@ -35,7 +35,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
     { data: valores },
   ] = await Promise.all([
     (() => {
-      let q = supabase.from('produto_comercial').select('id, codigo_produto, nome_produto, num_variaveis, opcao_acabamento').eq('empresa_id', empresa_id).is('deleted_at', null);
+       let q = supabase.from('produto_comercial').select('id, codigo_produto, nome_produto, num_variaveis, opcao_acabamento, categorias_tamanho').eq('empresa_id', empresa_id).is('deleted_at', null);
       if (codigo_produto) q = q.eq('codigo_produto', codigo_produto);
       return q;
     })(),
