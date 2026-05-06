@@ -111,17 +111,20 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
         });
     };
 
+    const numVariaveis = parseInt(produto.num_variaveis) || 1;
+    const isComposto = numVariaveis >= 2;
+
     if (artigosDoProduto.length === 0) {
       const composicoesJson = montarComposicoesJson('', false);
       const consumo_un = parseFloat(composicoesJson.reduce((s, c) => s + (c.valor_total || 0), 0).toFixed(3));
       const chave_equivalencia = await gerarChaveEquivalencia(produto.codigo_produto || '', '');
-      const isComposto = (produto.num_variaveis || 1) >= 2;
       registros.push({
         empresa_id, produto_id: produto.id,
         codigo_produto: produto.codigo_produto || '',
         nome_produto: produto.nome_produto,
         codigo_unico: null, artigo_nome: null, cor_nome: null, linha_nome: null,
         num_composicoes: numComposicoes, composicoes: composicoesJson, consumo_un,
+        num_variaveis: numVariaveis,
         indice: numComposicoes >= 1 ? 1 : null, custo_kg: null, custo_un: null,
         tipo_produto: isComposto ? 'composto' : 'simples',
         status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
@@ -132,7 +135,6 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
         const descricao_artigo = [vinculo.artigo_nome, vinculo.cor_nome, vinculo.linha_nome].filter(Boolean).join(' | ');
         const chave_equivalencia = await gerarChaveEquivalencia(produto.codigo_produto || '', descricao_artigo);
         const composicoesJson = montarComposicoesJson(descricao_artigo, true, artigo.vinculo_id);
-        const isComposto = (produto.num_variaveis || 1) >= 2;
         let consumo_un;
         if (isComposto) {
           const indiceDoProduto = parseInt(artigo.variavel_index) || 1;
@@ -150,6 +152,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
           cor_nome: vinculo.cor_nome || null,
           linha_nome: vinculo.linha_nome || null,
           num_composicoes: numComposicoes, composicoes: composicoesJson, consumo_un,
+          num_variaveis: numVariaveis,
           indice: parseInt(artigo.variavel_index) || 1,
           custo_kg: null, custo_un: null,
           tipo_produto: isComposto ? 'composto' : 'simples',

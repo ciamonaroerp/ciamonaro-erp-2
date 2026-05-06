@@ -431,7 +431,8 @@ export default function ProdutoComercialPage() {
       if (editingId) {
         // Remove campo local 'variáveis' (com acento) — não existe no banco; o campo real é num_variaveis
         const { variáveis: _v, ...dadosParaSalvar } = formData;
-        await editarMutation.mutateAsync({ id: editingId, d: dadosParaSalvar });
+        // Garante que num_variaveis é persistido corretamente
+        await editarMutation.mutateAsync({ id: editingId, d: { ...dadosParaSalvar, num_variaveis: numVar } });
         await saveComposicaoMutation.mutateAsync({ produto_id: editingId, composicoes_por_variavel: composicoesPorVariavel });
 
         // Salva consumo/custo de todos os artigos vinculados
@@ -523,7 +524,8 @@ export default function ProdutoComercialPage() {
         showSuccess({ title: "Produto atualizado", description: "As informações do produto foram salvas com sucesso." });
       } else {
         const { variáveis: _v2, ...dadosCriar } = formData;
-        criarMutation.mutate(dadosCriar);
+        // Garante que num_variaveis é salvo no banco ao criar
+        criarMutation.mutate({ ...dadosCriar, num_variaveis: numVar });
       }
     } catch (err) {
       showError({ title: "Erro ao salvar", description: err?.message || "Erro desconhecido" });
