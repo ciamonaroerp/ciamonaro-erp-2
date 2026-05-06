@@ -35,7 +35,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
     { data: valores },
   ] = await Promise.all([
     (() => {
-      let q = supabase.from('produto_comercial').select('id, codigo_produto, nome_produto, num_variaveis').eq('empresa_id', empresa_id).is('deleted_at', null);
+      let q = supabase.from('produto_comercial').select('id, codigo_produto, nome_produto, num_variaveis, opcao_acabamento').eq('empresa_id', empresa_id).is('deleted_at', null);
       if (codigo_produto) q = q.eq('codigo_produto', codigo_produto);
       return q;
     })(),
@@ -126,6 +126,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
          num_composicoes: numComposicoes, composicoes: composicoesJson, consumo_un,
          indice: numComposicoes >= 1 ? 1 : null, custo_kg: null, custo_un: null,
          tipo_produto: isComposto ? 'composto' : 'simples',
+         opcao_acabamento: produto.opcao_acabamento || null,
          status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
        });
     } else {
@@ -154,6 +155,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
           indice: parseInt(artigo.variavel_index) || 1,
           custo_kg: null, custo_un: null,
           tipo_produto: isComposto ? 'composto' : 'simples',
+          opcao_acabamento: produto.opcao_acabamento || null,
           deleted_at: null, status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
         });
       }
