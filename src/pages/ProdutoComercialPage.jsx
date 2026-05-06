@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGlobalAlert } from "@/components/GlobalAlertDialog";
 import { cn } from "@/lib/utils";
 import { ErpTableContainer } from "@/components/design-system";
-import { base44 } from "@/api/base44Client";
+import { sincronizarTabelaPrecos } from "@/utils/sincronizarTabelaPrecos";
 
 const EMPTY = { nome_produto: "", descricao: "", status: "Ativo", variáveis: 1, categorias_tamanho: [] };
 
@@ -444,13 +444,37 @@ export default function ProdutoComercialPage() {
             indice: parseInt(c.indice) || 1,
           }));
 
-        // Salva consumo e custo via backend (respeita arquitetura: sem acesso direto ao Supabase)
+        // Salva consumo e custo diretamente no Supabase
         if (artigosParaSalvar.length > 0) {
-          await base44.functions.invoke('salvarConsumoeCustoArtigos', {
-            empresa_id,
-            produto_id: editingId,
-            artigos: artigosParaSalvar,
-          });
+          for (const artigo of artigosParaSalvar) {
+            const { data: existente } = await supabase
+              .from('tabela_precos_sync')
+              .select('id')
+              .eq('codigo_unico', artigo.codigo_unico)
+              .eq('produto_id', editingId)
+              .eq('empresa_id', empresa_id)
+              .maybeSingle();
+            const consumoVal = parseFloat(String(artigo.consumo_un ?? '').replace(',', '.')) || 0;
+            const custoVal = parseFloat(String(artigo.custo_kg ?? '').replace(',', '.')) || 0;
+            const custoUn = consumoVal * custoVal;
+            if (existente) {
+              await supabase.from('tabela_precos_sync')
+                .update({ consumo_un: consumoVal, custo_kg: custoVal, custo_un: custoUn })
+                .eq('id', existente.id);
+            } else {
+              await supabase.from('tabela_precos_sync').insert({
+                codigo_unico: artigo.codigo_unico,
+                produto_id: editingId,
+                empresa_id,
+                codigo_produto: artigo.codigo_produto || '',
+                nome_produto: artigo.nome_produto || '',
+                consumo_un: consumoVal,
+                custo_kg: custoVal,
+                custo_un: custoUn,
+                indice: artigo.indice || 1,
+              });
+            }
+          }
         }
 
         // Valida e atualiza status_rendimento diretamente via Supabase

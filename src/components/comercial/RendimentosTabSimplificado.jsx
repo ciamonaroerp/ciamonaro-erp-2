@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEmpresa } from "@/components/context/EmpresaContext";
 import { supabase } from "@/components/lib/supabaseClient";
-import { base44 } from "@/api/base44Client";
+import { sincronizarTabelaPrecos } from "@/utils/sincronizarTabelaPrecos";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -106,7 +106,7 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
     }
     setSyncingCodigo(codigo_produto);
     try {
-      await base44.functions.invoke('sincronizarTabelaPrecos', {
+      await sincronizarTabelaPrecos({
         empresa_id,
         codigo_produto,
         ...(artigo_codigo ? { artigo_codigo } : {}),
