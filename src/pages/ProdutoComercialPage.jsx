@@ -453,12 +453,38 @@ export default function ProdutoComercialPage() {
           });
         }
 
-        // Valida e salva status_rendimento
+        // Valida e atualiza status_rendimento diretamente via Supabase
         try {
-          await base44.functions.invoke('validarStatusRendimento', {
-            produto_id: editingId,
-            empresa_id
-          });
+          const { data: artigosStatus } = await supabase
+            .from('produto_comercial_artigo')
+            .select('id, vinculo_id, status_rendimento')
+            .eq('produto_id', editingId)
+            .eq('empresa_id', empresa_id)
+            .is('deleted_at', null);
+
+          const { data: composicoesStatus } = await supabase
+            .from('produto_composicao')
+            .select('rendimento_id, variavel_index')
+            .eq('produto_id', editingId)
+            .eq('empresa_id', empresa_id);
+
+          const { data: valoresStatus } = await supabase
+            .from('produto_rendimento_valores')
+            .select('rendimento_id, vinculo_id, rendimento_valor')
+            .eq('produto_id', editingId)
+            .eq('empresa_id', empresa_id)
+            .is('deleted_at', null);
+
+          for (const artigo of (artigosStatus || [])) {
+            const rids = (composicoesStatus || []).map(c => c.rendimento_id);
+            const temTodos = rids.length > 0 && rids.every(rid => {
+              const val = (valoresStatus || []).find(v => v.rendimento_id === rid && v.vinculo_id === artigo.vinculo_id);
+              return val && parseFloat(val.rendimento_valor) > 0;
+            });
+            await supabase.from('produto_comercial_artigo')
+              .update({ status_rendimento: temTodos ? 'pronto' : 'pendente' })
+              .eq('id', artigo.id);
+          }
         } catch (err) {
           console.warn('Aviso ao validar status_rendimento:', err.message);
         }
