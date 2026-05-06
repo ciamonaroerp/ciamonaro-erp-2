@@ -126,7 +126,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
          num_composicoes: numComposicoes, composicoes: composicoesJson, consumo_un,
          indice: numComposicoes >= 1 ? 1 : null, custo_kg: null, custo_un: null,
          tipo_produto: isComposto ? 'composto' : 'simples',
-         opcao_acabamento: produto.opcao_acabamento || null,
+         opcao_acabamento: produto.opcao_acabamento === true ? true : (produto.opcao_acabamento === false ? false : null),
          status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
        });
     } else {
@@ -155,7 +155,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
           indice: parseInt(artigo.variavel_index) || 1,
           custo_kg: null, custo_un: null,
           tipo_produto: isComposto ? 'composto' : 'simples',
-          opcao_acabamento: produto.opcao_acabamento || null,
+          opcao_acabamento: produto.opcao_acabamento === true ? true : (produto.opcao_acabamento === false ? false : null),
           deleted_at: null, status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
         });
       }
