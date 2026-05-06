@@ -7,7 +7,7 @@ import { useGlobalAlert } from "@/components/GlobalAlertDialog";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, DollarSign, AlertTriangle, TrendingUp, Search, FileJson, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -123,7 +123,7 @@ function ModalConfirmacaoCusto({ open, onClose, codigoUnico, produtoId, descrica
     if (codigoUnico) params.codigo_unico = codigoUnico;
     else params.produto_id = produtoId;
 
-    supabase.from("historico_precos_erp").select("*").eq("empresa_id", empresa_id).eq(codigoUnico ? "codigo_unico" : "produto_id", codigoUnico || produtoId).order("data_nf", { ascending: false }).limit(10).then(({ data: histData }) => {
+    supabase.from("historico_precos_produto_erp").select("*").eq("empresa_id", empresa_id).eq(codigoUnico ? "codigo_unico" : "produto_id", codigoUnico || produtoId).order("data_nf", { ascending: false }).limit(10).then(({ data: histData }) => {
       if (!histData || histData.length === 0) { setSemHistorico(true); setCarregando(false); return; }
       const precos = histData.map(h => h.preco_kg).filter(Boolean);
       const media = precos.reduce((a, b) => a + b, 0) / precos.length;
@@ -150,10 +150,12 @@ function ModalConfirmacaoCusto({ open, onClose, codigoUnico, produtoId, descrica
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Atualizar Custo por Kg</DialogTitle>
-          <div className="mt-1 space-y-0.5">
-            <p className="text-xs text-slate-500">Código único: <span className="font-mono font-bold text-blue-700">{codigoUnico}</span></p>
-            {descricaoArtigo && <p className="text-xs text-slate-500">Artigo: <span className="font-medium text-slate-700">{descricaoArtigo}</span></p>}
-          </div>
+          <DialogDescription asChild>
+            <div className="mt-1 space-y-0.5">
+              <p className="text-xs text-slate-500">Código único: <span className="font-mono font-bold text-blue-700">{codigoUnico}</span></p>
+              {descricaoArtigo && <p className="text-xs text-slate-500">Artigo: <span className="font-medium text-slate-700">{descricaoArtigo}</span></p>}
+            </div>
+          </DialogDescription>
         </DialogHeader>
         <div className="py-2">
           {carregando && (
