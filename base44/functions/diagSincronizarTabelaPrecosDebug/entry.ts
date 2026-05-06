@@ -12,6 +12,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { empresa_id, codigo_produto, categorias_tamanho } = body;
 
+    console.log('[DEBUG] Corpo completo:', JSON.stringify(body, null, 2));
     console.log('[DEBUG] Entrada recebida:', {
       codigo_produto,
       categorias_tamanho,
@@ -26,10 +27,19 @@ Deno.serve(async (req) => {
       if (Array.isArray(categorias_tamanho)) {
         categoriasArray = categorias_tamanho.filter(c => c);
       } else if (typeof categorias_tamanho === 'string') {
-        const parsed = JSON.parse(categorias_tamanho);
-        categoriasArray = (Array.isArray(parsed) ? parsed : []).filter(c => c);
+        try {
+          const parsed = JSON.parse(categorias_tamanho);
+          categoriasArray = (Array.isArray(parsed) ? parsed : []).filter(c => c);
+        } catch {
+          categoriasArray = [];
+        }
       }
     }
+
+    console.log('[DEBUG] Após normalização:', {
+      categoriasArray,
+      quantidade: categoriasArray.length,
+    });
 
     console.log('[DEBUG] Categorias processadas:', {
       original: categorias_tamanho,
