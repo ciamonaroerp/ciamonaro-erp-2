@@ -80,12 +80,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
     artigosPorProduto[a.produto_id].push(a);
   });
 
-  // 1.5. Buscar categorias de tamanho para mapear baseado nas categorias_tamanho do produto
-   const { data: categoriasDb } = await supabase.from('categorias_tamanho').select('id, nome').eq('empresa_id', empresa_id);
-   const categoriasMap = {};
-   (categoriasDb || []).forEach(c => { categoriasMap[c.nome?.toLowerCase()] = c.id; });
-
-   // 2. Montar registros
+  // 2. Montar registros
    const registros = [];
    const agora = new Date().toISOString();
 
@@ -134,8 +129,8 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
         categoriasProduct = categoriasAUsar;
       }
     }
-    const categoriaTamanhoPrimeira = categoriasProduct[0];
-    const categoria_tamanho_id = categoriaTamanhoPrimeira ? categoriasMap[String(categoriaTamanhoPrimeira).toLowerCase()] : null;
+    // categoria_tamanho_id é o primeiro UUID do array (já é UUID, não nome)
+    const categoria_tamanho_id = categoriasProduct[0] || null;
 
     if (artigosDoProduto.length === 0) {
        const composicoesJson = montarComposicoesJson('', false);
