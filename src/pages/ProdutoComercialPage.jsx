@@ -541,8 +541,8 @@ export default function ProdutoComercialPage() {
   };
 
   const handleEdit = (row) => {
-    // Mapeia num_variaveis → variáveis para garantir que o loop gere as composições corretas
-    setFormData({ ...row, variáveis: row.variáveis || row.num_variaveis || 1, categorias_tamanho: Array.isArray(row.categorias_tamanho) ? row.categorias_tamanho : [] });
+    const numVar = parseInt(row.num_variaveis) || parseInt(row.variáveis) || 1;
+    setFormData({ ...row, variáveis: numVar, num_variaveis: numVar, categorias_tamanho: Array.isArray(row.categorias_tamanho) ? row.categorias_tamanho : [] });
     setEditingId(row.id);
     setComposicaoSearch("");
     setModalOpen(true);
@@ -721,7 +721,7 @@ export default function ProdutoComercialPage() {
             <div className="grid gap-4" style={{ gridTemplateColumns: 'minmax(0,80px) 1fr' }}>
               <div>
                 <label className="text-sm font-medium text-slate-900 block mb-1">Variáveis</label>
-                <Input type="number" min="1" max="4" value={formData.variáveis || 1} onChange={e => { const v = Math.max(1, Math.min(4, parseInt(e.target.value) || 1)); setFormData(p => ({ ...p, variáveis: v })); }} />
+                <Input type="number" min="1" max="4" value={formData.variáveis || 1} onChange={e => { const v = Math.max(1, Math.min(4, parseInt(e.target.value) || 1)); setFormData(p => ({ ...p, variáveis: v, num_variaveis: v })); }} />
               </div>
               <div>
                 <label className="text-sm font-medium text-slate-900 block mb-1">Descrição</label>
