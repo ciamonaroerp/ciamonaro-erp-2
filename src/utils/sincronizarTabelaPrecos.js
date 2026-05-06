@@ -22,7 +22,7 @@ async function gerarChaveEquivalencia(codigoProduto, descricaoArtigo) {
  * Sincroniza a tabela_precos_sync para um produto (ou todos) diretamente via Supabase.
  * Substitui a backend function sincronizarTabelaPrecos para funcionar no Vercel.
  */
-export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, artigo_codigo }) {
+export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, artigo_codigo, categorias_tamanho: categoriasFromParam }) {
   if (!empresa_id) throw new Error('empresa_id obrigatório');
 
   // 1. Buscar dados em paralelo
@@ -120,16 +120,18 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
     const isComposto = numVariaveis >= 2;
 
     // Detecta primeira categoria para categoria_tamanho_id
+    // Usa parâmetro passado como prioridade, fallback para dados do produto
+    const categoriasAUsar = categoriasFromParam || produto.categorias_tamanho;
     let categoriasProduct = [];
-    if (produto.categorias_tamanho) {
-      if (typeof produto.categorias_tamanho === 'string') {
+    if (categoriasAUsar) {
+      if (typeof categoriasAUsar === 'string') {
         try {
-          categoriasProduct = JSON.parse(produto.categorias_tamanho);
+          categoriasProduct = JSON.parse(categoriasAUsar);
         } catch {
           categoriasProduct = [];
         }
-      } else if (Array.isArray(produto.categorias_tamanho)) {
-        categoriasProduct = produto.categorias_tamanho;
+      } else if (Array.isArray(categoriasAUsar)) {
+        categoriasProduct = categoriasAUsar;
       }
     }
     const categoriaTamanhoPrimeira = categoriasProduct[0];

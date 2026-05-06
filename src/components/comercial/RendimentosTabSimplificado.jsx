@@ -106,10 +106,14 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
     }
     setSyncingCodigo(codigo_produto);
     try {
+      // Busca dados completos do produto para enviar categorias_tamanho
+      const produtoAtual = produtos.find(p => p.codigo_produto === codigo_produto);
+      
       await sincronizarTabelaPrecos({
         empresa_id,
         codigo_produto,
         ...(artigo_codigo ? { artigo_codigo } : {}),
+        ...(produtoAtual?.categorias_tamanho ? { categorias_tamanho: produtoAtual.categorias_tamanho } : {}),
       });
       qc.invalidateQueries({ queryKey: ["rendimentos-artigos", empresa_id] });
       qc.invalidateQueries({ queryKey: ["rendimentos-valores", empresa_id] });
