@@ -298,7 +298,7 @@ Deno.serve(async (req) => {
         
         const { error: upsertError } = await supabase
           .from('tabela_precos_sync')
-          .upsert(lote, { onConflict: 'empresa_id,codigo_produto,codigo_unico', ignoreDuplicates: false });
+          .upsert(lote, { onConflict: 'produto_id,codigo_unico', ignoreDuplicates: false });
         
         if (upsertError) {
           console.error('[sincronizarTabelaPrecos] Upsert error (com artigo):', upsertError.message);
@@ -344,7 +344,7 @@ Deno.serve(async (req) => {
         const lote = registrosComArtigoInd.slice(i, i + BATCH);
         const { error: upsertError } = await supabase
           .from('tabela_precos_sync')
-          .upsert(lote, { onConflict: 'empresa_id,codigo_produto,codigo_unico', ignoreDuplicates: false });
+          .upsert(lote, { onConflict: 'produto_id,codigo_unico', ignoreDuplicates: false });
         
         if (upsertError) {
           console.error('[sincronizarTabelaPrecos] Upsert error (com artigo ind):', upsertError.message);
