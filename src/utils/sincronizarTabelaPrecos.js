@@ -80,10 +80,27 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
     artigosPorProduto[a.produto_id].push(a);
   });
 
-  // 1.5. Mapear categorias de tamanho (nomes → UUIDs)
+  // 1.5. Mapear categorias de tamanho (nomes → UUIDs), criando se necessário
     const { data: categoriasDb } = await supabase.from('categorias_tamanho').select('id, nome').eq('empresa_id', empresa_id);
     const categoriasMap = {};
     (categoriasDb || []).forEach(c => { categoriasMap[c.nome?.toLowerCase()] = c.id; });
+
+    // Função para buscar ou criar categoria por nome
+    const obterOuCriarCategoria = async (nome) => {
+      if (!nome) return null;
+      const nomeLower = String(nome).toLowerCase();
+      if (categoriasMap[nomeLower]) return categoriasMap[nomeLower];
+      
+      // Cria nova categoria
+      const { data, error } = await supabase.from('categorias_tamanho')
+        .insert({ empresa_id, nome: String(nome).trim(), ativo: true })
+        .select('id')
+        .maybeSingle();
+      
+      if (error || !data?.id) return null;
+      categoriasMap[nomeLower] = data.id;
+      return data.id;
+    };
 
   // 2. Montar registros
     const registros = [];
@@ -134,9 +151,9 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
          categoriasProduct = categoriasAUsar;
        }
      }
-     // Mapeia primeiro nome da categoria para UUID
+     // Mapeia primeiro nome da categoria para UUID (ou cria se não existir)
      const categoriaNome = categoriasProduct[0];
-     const categoria_tamanho_id = categoriaNome ? categoriasMap[String(categoriaNome).toLowerCase()] : null;
+     const categoria_tamanho_id = categoriaNome ? await obterOuCriarCategoria(categoriaNome) : null;
 
     if (artigosDoProduto.length === 0) {
        const composicoesJson = montarComposicoesJson('', false);
