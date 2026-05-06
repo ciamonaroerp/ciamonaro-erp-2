@@ -168,10 +168,12 @@ export default function ProdutoComercialPage() {
     staleTime: 30000,
   });
 
-  // Set de produto_ids que têm algum item com consumo_un=0 ou custo_kg=0
+  // Set de produto_ids que têm algum item COM artigo vinculado (codigo_unico não nulo)
+  // com consumo_un=0 ou custo_kg=0 — ignora registros "fantasma" sem artigo
   const produtosComPendencia = useMemo(() => {
     const set = new Set();
     todosPrecosSync.forEach(p => {
+      if (!p.codigo_unico) return; // ignora registros sem artigo vinculado
       if ((parseFloat(p.consumo_un) || 0) === 0 || (parseFloat(p.custo_kg) || 0) === 0) {
         set.add(p.produto_id);
       }
