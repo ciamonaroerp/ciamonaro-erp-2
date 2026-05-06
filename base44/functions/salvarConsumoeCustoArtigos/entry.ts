@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 Deno.serve(async (req) => {
@@ -16,9 +16,13 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing empresa_id or artigos' }, { status: 400 });
     }
 
+    // Usa o token do usuário autenticado para respeitar RLS
+    const authHeader = req.headers.get('Authorization') || '';
+    const userToken = authHeader.replace('Bearer ', '');
     const supabase = createClient(
       Deno.env.get('VITE_SUPABASE_URL'),
-      Deno.env.get('SUPABASE_SERVICE_KEY')
+      Deno.env.get('VITE_SUPABASE_ANON_KEY'),
+      { global: { headers: { Authorization: `Bearer ${userToken}` } }, auth: { autoRefreshToken: false, persistSession: false } }
     );
     let updated = 0;
 

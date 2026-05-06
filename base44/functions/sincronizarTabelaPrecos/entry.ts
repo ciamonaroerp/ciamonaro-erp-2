@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     if (!empresa_id) return Response.json({ error: 'empresa_id obrigatório' }, { status: 400 });
 
     const supabaseUrl = Deno.env.get('VITE_SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_KEY') || Deno.env.get('VITE_SUPABASE_ANON_KEY');
+    const supabaseKey = Deno.env.get('VITE_SUPABASE_ANON_KEY');
     if (!supabaseUrl || !supabaseKey) {
       return Response.json({ error: 'Supabase não configurado' }, { status: 500 });
     }
