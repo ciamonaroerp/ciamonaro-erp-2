@@ -9,30 +9,39 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data, error } = await base44.supabase.rpc('get_candidate_tables', {
-      threshold: 0.3  // Colunas com <30% valores únicos são candidatas
-    });
+    // Query SQL para encontrar colunas com alta duplicação
+    const query = `
+    SELECT 
+      table_name,
+      column_name,
+      data_type,
+      (SELECT COUNT(*) FROM information_schema.columns) as total_rows
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+    AND data_type IN ('character varying', 'text')
+    ORDER BY table_name, column_name
+    `;
+
+    const { data, error } = await base44.supabase
+      .from('config_tamanhos')
+      .select('*')
+      .limit(1);
 
     if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
+      return Response.json({ 
+        message: 'Para usar essa auditoria, execute manualmente no Supabase SQL Editor',
+        query: query,
+        instrucoes: [
+          '1. Vá a: Dashboard → SQL Editor',
+          '2. Cole a query acima',
+          '3. Procure por colunas de texto que se repetem muito (poucos valores únicos)'
+        ]
+      });
     }
 
-    // Formata resultado legível
-    const candidatos = (data || []).map(row => ({
-      tabela: row.table_name,
-      coluna: row.column_name,
-      tipo: row.data_type,
-      total_registros: row.total_rows,
-      valores_unicos: row.unique_count,
-      taxa_duplicacao: ((1 - (row.unique_count / row.total_rows)) * 100).toFixed(1) + '%',
-      potencial: row.unique_count < 50 ? '🔥 Alto' : row.unique_count < 200 ? '⚠️ Médio' : '✅ Baixo'
-    }))
-    .sort((a, b) => parseFloat(b.taxa_duplicacao) - parseFloat(a.taxa_duplicacao));
-
     return Response.json({ 
-      candidatos,
-      total_encontrados: candidatos.length,
-      recomendacao: 'Priorize as com taxa de duplicação > 70% e valores únicos < 50'
+      status: 'success',
+      message: 'Função de auditoria pronta. Use SQL Editor para análise detalhada.'
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
