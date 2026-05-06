@@ -21,8 +21,8 @@ async function gerarChaveEquivalencia(codigoProduto, descricaoArtigo) {
 
 Deno.serve(async (req) => {
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const base44sdk = createClientFromRequest(req);
+    const user = await base44sdk.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
@@ -35,12 +35,9 @@ Deno.serve(async (req) => {
     if (!supabaseUrl || !supabaseKey) {
       return Response.json({ error: 'Supabase não configurado' }, { status: 500 });
     }
-    // Repassa o token do usuário autenticado para respeitar RLS
-    const authHeader = req.headers.get('Authorization') || '';
-    const userToken = authHeader.replace('Bearer ', '');
+    // Usa anon key — RLS desabilitada para tabela_precos_sync e produto_rendimento_valores
     const supabase = createClient(supabaseUrl, supabaseKey, {
       auth: { autoRefreshToken: false, persistSession: false },
-      global: { headers: { Authorization: `Bearer ${userToken}` } }
     });
 
     // 1. Buscar todos os dados necessários em paralelo
@@ -223,7 +220,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Assign grupo_id
     for (const r of registros) {
       if (r.chave_equivalencia) {
         if (!grupoMap[r.chave_equivalencia]) {
@@ -234,7 +230,6 @@ Deno.serve(async (req) => {
     }
 
     // Preservar custo_kg existente
-    const codigosUnicos = registros.map(r => r.codigo_unico).filter(Boolean);
     const produtoIds = registros.map(r => r.produto_id).filter(Boolean);
     const custoKgExistente = {};
     const custoKgPorProduto = {};
@@ -256,50 +251,34 @@ Deno.serve(async (req) => {
       }
     });
 
-    // Mesclar custo_kg existente nos registros
     for (const r of registros) {
       let mergedCustoKg = null;
-
       if (r.codigo_unico && custoKgExistente[r.codigo_unico]) {
         mergedCustoKg = custoKgExistente[r.codigo_unico].custo_kg;
       } else if (!r.codigo_unico && r.produto_id && custoKgPorProduto[r.produto_id]) {
         mergedCustoKg = custoKgPorProduto[r.produto_id].custo_kg;
       }
-
       r.custo_kg = mergedCustoKg;
-
       const consumoNum = parseFloat(String(r.consumo_un || 0).replace(',', '.'));
       const custoKgNum = parseFloat(String(mergedCustoKg || 0).replace(',', '.'));
-      
       if (consumoNum > 0 && custoKgNum > 0) {
-        const resultado = consumoNum * custoKgNum;
-        r.custo_un = parseFloat(resultado.toFixed(3));
+        r.custo_un = parseFloat((consumoNum * custoKgNum).toFixed(3));
       } else {
         r.custo_un = null;
       }
     }
 
-    // Sincronizar registros
+    // 5. Sincronizar registros
     if (!codigo_produto) {
       const produtosAtivosIds = new Set((produtos || []).map(p => p.id));
-
       const { data: registrosExistentes } = await supabase
         .from('tabela_precos_sync')
         .select('id, produto_id')
         .eq('empresa_id', empresa_id);
 
       const registrosObsoletos = (registrosExistentes || []).filter(r => !produtosAtivosIds.has(r.produto_id));
-
       if (registrosObsoletos.length > 0) {
-        const { error: updateError } = await supabase
-          .from('tabela_precos_sync')
-          .update({ status: 'inativo' })
-          .in('id', registrosObsoletos.map(r => r.id));
-
-        if (updateError) {
-          console.error('[sincronizarTabelaPrecos] Update error:', updateError.message);
-          return Response.json({ error: updateError.message }, { status: 400 });
-        }
+        await supabase.from('tabela_precos_sync').update({ status: 'inativo' }).in('id', registrosObsoletos.map(r => r.id));
       }
 
       const registrosComArtigo = registros.filter(r => r.codigo_unico);
@@ -309,109 +288,59 @@ Deno.serve(async (req) => {
 
       for (let i = 0; i < registrosComArtigo.length; i += BATCH) {
         const lote = registrosComArtigo.slice(i, i + BATCH);
-        console.log(`[sincronizarTabelaPrecos] Lote com artigo ${i / BATCH + 1}: ${lote.length} registros`);
-        
-        const { error: upsertError } = await supabase
-          .from('tabela_precos_sync')
-          .upsert(lote, { onConflict: 'produto_id,codigo_unico', ignoreDuplicates: false });
-        
-        if (upsertError) {
-          console.error('[sincronizarTabelaPrecos] Upsert error (com artigo):', upsertError.message);
-          return Response.json({ error: upsertError.message }, { status: 400 });
-        }
+        const { error: upsertError } = await supabase.from('tabela_precos_sync').upsert(lote, { onConflict: 'produto_id,codigo_unico', ignoreDuplicates: false });
+        if (upsertError) return Response.json({ error: upsertError.message }, { status: 400 });
         totalUpsertados += lote.length;
       }
 
       for (const reg of registrosSemArtigo) {
-        const { data: existente } = await supabase
-          .from('tabela_precos_sync')
-          .select('id')
-          .eq('empresa_id', empresa_id)
-          .eq('produto_id', reg.produto_id)
-          .is('codigo_unico', null)
-          .maybeSingle();
-        
+        const { data: existente } = await supabase.from('tabela_precos_sync').select('id').eq('empresa_id', empresa_id).eq('produto_id', reg.produto_id).is('codigo_unico', null).maybeSingle();
         if (existente) {
           const { error: updErr } = await supabase.from('tabela_precos_sync').update(reg).eq('id', existente.id);
-          if (updErr) { 
-            console.error('[sincronizarTabelaPrecos] Update sem artigo error:', updErr.message); 
-            return Response.json({ error: updErr.message }, { status: 400 }); 
-          }
+          if (updErr) return Response.json({ error: updErr.message }, { status: 400 });
         } else {
           const { error: insErr } = await supabase.from('tabela_precos_sync').insert(reg);
-          if (insErr) { 
-            console.error('[sincronizarTabelaPrecos] Insert sem artigo error:', insErr.message); 
-            return Response.json({ error: insErr.message }, { status: 400 }); 
-          }
+          if (insErr) return Response.json({ error: insErr.message }, { status: 400 });
         }
         totalUpsertados++;
       }
-
-      console.log(`[sincronizarTabelaPrecos] Sincronização geral concluída: ${totalUpsertados} registros processados`);
+      console.log(`[sincronizarTabelaPrecos] Geral: ${totalUpsertados} registros`);
     } else {
       const registrosComArtigoInd = registros.filter(r => r.codigo_unico);
       const registrosSemArtigoInd = registros.filter(r => !r.codigo_unico);
       let totalUpsertados = 0;
       const BATCH = 100;
-      console.log(`[sincronizarTabelaPrecos] Sincronização individual do produto: ${codigo_produto} (${registros.length} registros, ${registrosComArtigoInd.length} com artigo, ${registrosSemArtigoInd.length} sem artigo)`);
 
       for (let i = 0; i < registrosComArtigoInd.length; i += BATCH) {
         const lote = registrosComArtigoInd.slice(i, i + BATCH);
-        const { error: upsertError } = await supabase
-          .from('tabela_precos_sync')
-          .upsert(lote, { onConflict: 'produto_id,codigo_unico', ignoreDuplicates: false });
-        
-        if (upsertError) {
-          console.error('[sincronizarTabelaPrecos] Upsert error (com artigo ind):', upsertError.message);
-          return Response.json({ error: upsertError.message }, { status: 400 });
-        }
+        const { error: upsertError } = await supabase.from('tabela_precos_sync').upsert(lote, { onConflict: 'produto_id,codigo_unico', ignoreDuplicates: false });
+        if (upsertError) return Response.json({ error: upsertError.message }, { status: 400 });
         totalUpsertados += lote.length;
       }
 
       for (const reg of registrosSemArtigoInd) {
-        const { data: existente } = await supabase
-          .from('tabela_precos_sync')
-          .select('id')
-          .eq('empresa_id', empresa_id)
-          .eq('produto_id', reg.produto_id)
-          .is('codigo_unico', null)
-          .maybeSingle();
-        
+        const { data: existente } = await supabase.from('tabela_precos_sync').select('id').eq('empresa_id', empresa_id).eq('produto_id', reg.produto_id).is('codigo_unico', null).maybeSingle();
         if (existente) {
           const { error: updErr } = await supabase.from('tabela_precos_sync').update(reg).eq('id', existente.id);
-          if (updErr) { 
-            console.error('[sincronizarTabelaPrecos] Update sem artigo ind error:', updErr.message); 
-            return Response.json({ error: updErr.message }, { status: 400 }); 
-          }
+          if (updErr) return Response.json({ error: updErr.message }, { status: 400 });
         } else {
           const { error: insErr } = await supabase.from('tabela_precos_sync').insert(reg);
-          if (insErr) { 
-            console.error('[sincronizarTabelaPrecos] Insert sem artigo ind error:', insErr.message); 
-            return Response.json({ error: insErr.message }, { status: 400 }); 
-          }
+          if (insErr) return Response.json({ error: insErr.message }, { status: 400 });
         }
         totalUpsertados++;
       }
-      console.log(`[sincronizarTabelaPrecos] Sincronização individual concluída: ${totalUpsertados} registros processados`);
+      console.log(`[sincronizarTabelaPrecos] Individual ${codigo_produto}: ${totalUpsertados} registros`);
     }
 
-    console.log('[sincronizarTabelaPrecos] Sincronização concluída sem deletar registros');
-
+    // Marcar como sincronizado
     const produtosIds = (produtos || []).map(p => p.id);
     if (produtosIds.length > 0) {
-      const { error: syncErr } = await supabase
-        .from('produto_rendimento_valores')
-        .update({ sincronizado: true })
-        .eq('empresa_id', empresa_id)
-        .in('produto_id', produtosIds)
-        .is('deleted_at', null);
-      if (syncErr) console.error('[sincronizarTabelaPrecos] Erro ao marcar sincronizado:', syncErr.message);
-      else console.log(`[sincronizarTabelaPrecos] Marcados como sincronizados: ${produtosIds.length} produto(s)`);
+      await supabase.from('produto_rendimento_valores').update({ sincronizado: true }).eq('empresa_id', empresa_id).in('produto_id', produtosIds).is('deleted_at', null);
     }
 
     return Response.json({ success: true, total: registros.length, mode: codigo_produto ? 'individual' : 'geral' });
   } catch (error) {
     console.error('[sincronizarTabelaPrecos] Exception:', error.message);
-    return Response.json({ error: error.message, stack: error.stack }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500 });
   }
 });
