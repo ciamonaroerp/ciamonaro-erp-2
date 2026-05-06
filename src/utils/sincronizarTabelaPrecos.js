@@ -26,14 +26,15 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
   if (!empresa_id) throw new Error('empresa_id obrigatório');
 
   // 1. Buscar dados em paralelo
-  const [
-    { data: produtos },
-    { data: artigosRaw },
-    { data: configVinculos },
-    { data: composicoes },
-    { data: rendimentos },
-    { data: valores },
-  ] = await Promise.all([
+   const [
+     { data: produtos },
+     { data: artigosRaw },
+     { data: configVinculos },
+     { data: composicoes },
+     { data: rendimentos },
+     { data: valores },
+     { data: categoriasConfig },
+   ] = await Promise.all([
     (() => {
        let q = supabase.from('produto_comercial').select('id, codigo_produto, nome_produto, num_variaveis, opcao_acabamento, categorias_tamanho').eq('empresa_id', empresa_id).is('deleted_at', null);
       if (codigo_produto) q = q.eq('codigo_produto', codigo_produto);
@@ -48,7 +49,8 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
     supabase.from('produto_composicao').select('produto_id, rendimento_id, variavel_index').eq('empresa_id', empresa_id),
     supabase.from('produto_rendimentos').select('id, nome').eq('empresa_id', empresa_id).is('deleted_at', null),
     supabase.from('produto_rendimento_valores').select('produto_id, rendimento_id, rendimento_valor, descricao_artigo, vinculo_id').eq('empresa_id', empresa_id).is('deleted_at', null),
-  ]);
+    supabase.from('config_tamanhos').select('id, categoria').eq('empresa_id', empresa_id).is('deleted_at', null),
+    ]);
 
   const vinculosMap = {};
   (configVinculos || []).forEach(v => { vinculosMap[v.id] = v; });
@@ -78,6 +80,14 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
   (artigosRaw || []).forEach(a => {
     if (!artigosPorProduto[a.produto_id]) artigosPorProduto[a.produto_id] = [];
     artigosPorProduto[a.produto_id].push(a);
+  });
+
+  // Map categoria → id
+  const categoriasMap = {};
+  (categoriasConfig || []).forEach(c => {
+    if (c.categoria && c.id) {
+      categoriasMap[c.categoria.toLowerCase().trim()] = c.id;
+    }
   });
 
 
@@ -132,6 +142,13 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
        }
      }
 
+     // Mapeia primeira categoria para ID
+     let categoria_tamanho_id = null;
+     if (categoriasProduct.length > 0) {
+       const primeiraCat = String(categoriasProduct[0]).toLowerCase().trim();
+       categoria_tamanho_id = categoriasMap[primeiraCat] || null;
+     }
+
 
     if (artigosDoProduto.length === 0) {
        const composicoesJson = montarComposicoesJson('', false);
@@ -146,7 +163,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
           indice: numComposicoes >= 1 ? 1 : null, custo_kg: null, custo_un: null,
           tipo_produto: isComposto ? 'composto' : 'simples',
           opcao_acabamento: produto.opcao_acabamento === true ? true : (produto.opcao_acabamento === false ? false : null),
-          status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
+          categoria_tamanho_id, status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
         });
      } else {
        for (const artigo of artigosDoProduto) {
@@ -175,7 +192,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
            custo_kg: null, custo_un: null,
            tipo_produto: isComposto ? 'composto' : 'simples',
            opcao_acabamento: produto.opcao_acabamento === true ? true : (produto.opcao_acabamento === false ? false : null),
-           deleted_at: null, status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
+           categoria_tamanho_id, deleted_at: null, status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
          });
        }
      }
