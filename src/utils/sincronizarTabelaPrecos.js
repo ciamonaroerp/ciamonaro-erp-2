@@ -80,57 +80,63 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
     artigosPorProduto[a.produto_id].push(a);
   });
 
+  // 1.5. Mapear categorias de tamanho (nomes → UUIDs)
+    const { data: categoriasDb } = await supabase.from('categorias_tamanho').select('id, nome').eq('empresa_id', empresa_id);
+    const categoriasMap = {};
+    (categoriasDb || []).forEach(c => { categoriasMap[c.nome?.toLowerCase()] = c.id; });
+
   // 2. Montar registros
-   const registros = [];
-   const agora = new Date().toISOString();
+    const registros = [];
+    const agora = new Date().toISOString();
 
-   for (const produto of (produtos || [])) {
-    const artigosDoProduto = artigosPorProduto[produto.id] || [];
-    const composicoesDoProduto = composicoesPorProduto[produto.id] || {};
-    const numComposicoes = Object.keys(composicoesDoProduto).length;
+    for (const produto of (produtos || [])) {
+     const artigosDoProduto = artigosPorProduto[produto.id] || [];
+     const composicoesDoProduto = composicoesPorProduto[produto.id] || {};
+     const numComposicoes = Object.keys(composicoesDoProduto).length;
 
-    const montarComposicoesJson = (descricaoArtigo, temArtigos, vinculo_id_artigo) => {
-      const descricaoArtigoSoNome = descricaoArtigo ? descricaoArtigo.split(' | ')[0].trim() : '';
-      return Object.entries(composicoesDoProduto)
-        .sort(([a], [b]) => Number(a) - Number(b))
-        .map(([idx, rids]) => {
-          const itens = rids.map(rid => {
-            let valor = 0;
-            if (temArtigos) {
-              valor = valoresMap[`${produto.id}|${rid}|${descricaoArtigo}`]
-                   ?? valoresMap[`${produto.id}|${rid}|${descricaoArtigoSoNome}`]
-                   ?? (vinculo_id_artigo ? valoresMap[`${produto.id}|${rid}|vinculo:${vinculo_id_artigo}`] : undefined)
-                   ?? 0;
-            } else {
-              valor = valoresMap[`${produto.id}|${rid}|`] ?? 0;
-            }
-            return { rendimento_id: rid, nome: rendimentosMap[rid]?.nome || rid, valor: parseFloat(valor.toFixed(3)) };
-          });
-          const valor_total = parseFloat(itens.reduce((s, i) => s + i.valor, 0).toFixed(3));
-          return { indice: Number(idx), itens, valor_total };
-        });
-    };
+     const montarComposicoesJson = (descricaoArtigo, temArtigos, vinculo_id_artigo) => {
+       const descricaoArtigoSoNome = descricaoArtigo ? descricaoArtigo.split(' | ')[0].trim() : '';
+       return Object.entries(composicoesDoProduto)
+         .sort(([a], [b]) => Number(a) - Number(b))
+         .map(([idx, rids]) => {
+           const itens = rids.map(rid => {
+             let valor = 0;
+             if (temArtigos) {
+               valor = valoresMap[`${produto.id}|${rid}|${descricaoArtigo}`]
+                    ?? valoresMap[`${produto.id}|${rid}|${descricaoArtigoSoNome}`]
+                    ?? (vinculo_id_artigo ? valoresMap[`${produto.id}|${rid}|vinculo:${vinculo_id_artigo}`] : undefined)
+                    ?? 0;
+             } else {
+               valor = valoresMap[`${produto.id}|${rid}|`] ?? 0;
+             }
+             return { rendimento_id: rid, nome: rendimentosMap[rid]?.nome || rid, valor: parseFloat(valor.toFixed(3)) };
+           });
+           const valor_total = parseFloat(itens.reduce((s, i) => s + i.valor, 0).toFixed(3));
+           return { indice: Number(idx), itens, valor_total };
+         });
+     };
 
-    const numVariaveis = parseInt(produto.num_variaveis) || 1;
-    const isComposto = numVariaveis >= 2;
+     const numVariaveis = parseInt(produto.num_variaveis) || 1;
+     const isComposto = numVariaveis >= 2;
 
-    // Detecta primeira categoria para categoria_tamanho_id
-    // Usa parâmetro passado como prioridade, fallback para dados do produto
-    const categoriasAUsar = categoriasFromParam || produto.categorias_tamanho;
-    let categoriasProduct = [];
-    if (categoriasAUsar) {
-      if (typeof categoriasAUsar === 'string') {
-        try {
-          categoriasProduct = JSON.parse(categoriasAUsar);
-        } catch {
-          categoriasProduct = [];
-        }
-      } else if (Array.isArray(categoriasAUsar)) {
-        categoriasProduct = categoriasAUsar;
-      }
-    }
-    // categoria_tamanho_id é o primeiro UUID do array (já é UUID, não nome)
-    const categoria_tamanho_id = categoriasProduct[0] || null;
+     // Detecta primeira categoria para categoria_tamanho_id
+     // Usa parâmetro passado como prioridade, fallback para dados do produto
+     const categoriasAUsar = categoriasFromParam || produto.categorias_tamanho;
+     let categoriasProduct = [];
+     if (categoriasAUsar) {
+       if (typeof categoriasAUsar === 'string') {
+         try {
+           categoriasProduct = JSON.parse(categoriasAUsar);
+         } catch {
+           categoriasProduct = [];
+         }
+       } else if (Array.isArray(categoriasAUsar)) {
+         categoriasProduct = categoriasAUsar;
+       }
+     }
+     // Mapeia primeiro nome da categoria para UUID
+     const categoriaNome = categoriasProduct[0];
+     const categoria_tamanho_id = categoriaNome ? categoriasMap[String(categoriaNome).toLowerCase()] : null;
 
     if (artigosDoProduto.length === 0) {
        const composicoesJson = montarComposicoesJson('', false);
