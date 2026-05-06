@@ -374,58 +374,86 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
   };
 
   const handleSalvar = async () => {
-    const grupo = getComposicoesDoProduto(editingProduto.id);
-    // Filtra apenas rendimentos válidos (não deletados) para evitar salvar valores de rendimentos obsoletos
-    const allRids = Object.values(grupo).flat().filter(rid => !!rendimentosMap[rid]);
+     const grupo = getComposicoesDoProduto(editingProduto.id);
+     // Filtra apenas rendimentos válidos (não deletados) para evitar salvar valores de rendimentos obsoletos
+     const allRids = Object.values(grupo).flat().filter(rid => !!rendimentosMap[rid]);
 
-    for (const rid of allRids) {
-      const valor = parseValInput(rendInputs[rid] || "0");
-      if (valor <= 0) {
-        const rend = rendimentosMap[rid];
-        showError({ title: "Valor inválido", description: `O rendimento "${rend?.nome || rid}" não pode ser zero ou vazio.` });
-        return;
-      }
-    }
+     for (const rid of allRids) {
+       const valor = parseValInput(rendInputs[rid] || "0");
+       if (valor <= 0) {
+         const rend = rendimentosMap[rid];
+         showError({ title: "Valor inválido", description: `O rendimento "${rend?.nome || rid}" não pode ser zero ou vazio.` });
+         return;
+       }
+     }
 
-    for (const rid of allRids) {
-      const rendimento_valor = parseValInput(rendInputs[rid] || "0");
-      await upsertMutation.mutateAsync({ rendimento_id: rid, produto_id: editingProduto.id, artigo_nome: editingProduto.artigo_nome, vinculo_id: editingProduto.vinculo_id || null, rendimento_valor });
-    }
-    qc.invalidateQueries(["rendimentos-valores", empresa_id]);
-    
-    // Atualiza status do artigo para "pronto"
-    try {
-      let query = supabase
-        .from('produto_comercial_artigo')
-        .update({ status_rendimento: 'pronto' })
-        .eq('produto_id', editingProduto.id)
-        .eq('empresa_id', empresa_id);
-      
-      if (editingProduto.vinculo_id) {
-        query = query.eq('vinculo_id', editingProduto.vinculo_id);
-      } else {
-        query = query.is('vinculo_id', null);
-      }
-      
-      const { error } = await query;
-      
-      if (error) {
-        showError({ title: "Erro ao atualizar status", description: error.message });
-      }
-    } catch (e) {
-      console.error('Erro ao atualizar status:', e);
-    }
+     for (const rid of allRids) {
+       const rendimento_valor = parseValInput(rendInputs[rid] || "0");
+       await upsertMutation.mutateAsync({ rendimento_id: rid, produto_id: editingProduto.id, artigo_nome: editingProduto.artigo_nome, vinculo_id: editingProduto.vinculo_id || null, rendimento_valor });
+     }
+     qc.invalidateQueries(["rendimentos-valores", empresa_id]);
 
-    qc.invalidateQueries(["rendimentos-artigos", empresa_id]);
-    
-    const produtoEditado = { ...editingProduto };
-    setEditModalOpen(false);
-    setEditingProduto(null);
-    showSuccess({ title: "Salvo", description: "Valores atualizados com sucesso." });
-    
-    if (!produtoEditado.codigo_produto) return;
-    await handleSincronizarItem(produtoEditado.codigo_produto, produtoEditado.artigo_codigo);
-  };
+     // Atualiza status do artigo para "pronto"
+     try {
+       let query = supabase
+         .from('produto_comercial_artigo')
+         .update({ status_rendimento: 'pronto' })
+         .eq('produto_id', editingProduto.id)
+         .eq('empresa_id', empresa_id);
+
+       if (editingProduto.vinculo_id) {
+         query = query.eq('vinculo_id', editingProduto.vinculo_id);
+       } else {
+         query = query.is('vinculo_id', null);
+       }
+
+       const { error } = await query;
+
+       if (error) {
+         showError({ title: "Erro ao atualizar status", description: error.message });
+       }
+     } catch (e) {
+       console.error('Erro ao atualizar status:', e);
+     }
+
+     qc.invalidateQueries(["rendimentos-artigos", empresa_id]);
+
+     const produtoEditado = { ...editingProduto };
+     setEditModalOpen(false);
+     setEditingProduto(null);
+     showSuccess({ title: "Salvo", description: "Valores atualizados com sucesso." });
+
+     // Sincroniza opcao_acabamento
+     await sincronizarOpcaoAcabamento();
+     
+     if (!produtoEditado.codigo_produto) return;
+     await handleSincronizarItem(produtoEditado.codigo_produto, produtoEditado.artigo_codigo);
+   };
+
+   const sincronizarOpcaoAcabamento = async () => {
+     if (!editingProduto?.id) return;
+
+     // Busca opcao_acabamento da tabela produto_comercial
+     const { data: produtoData } = await supabase
+       .from('produto_comercial')
+       .select('opcao_acabamento')
+       .eq('id', editingProduto.id)
+       .maybeSingle();
+
+     const opcaoAcabamento = produtoData?.opcao_acabamento;
+
+     // Atualiza tabela_precos_sync com o valor de opcao_acabamento
+     if (opcaoAcabamento !== null && opcaoAcabamento !== undefined) {
+       const { error } = await supabase
+         .from('tabela_precos_sync')
+         .update({ opcao_acabamento: opcaoAcabamento })
+         .eq('produto_id', editingProduto.id);
+
+       if (error) {
+         console.warn('Aviso ao sincronizar opcao_acabamento:', error.message);
+       }
+     }
+   };
 
   // Filtra por busca
   const linhasFiltradas = useMemo(() => {

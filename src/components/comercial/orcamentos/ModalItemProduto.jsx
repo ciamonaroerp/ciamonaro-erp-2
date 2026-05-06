@@ -217,10 +217,10 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
   const itemEdicaoIdRestoradoRef = useRef(null); // Rastreia qual itemEdicao foi restaurado
 
   // Estado de produto/tecido dependente
-  const [produtoId, setProdutoId] = useState("");
-  const [estruturaProduto, setEstruturaProduto] = useState({ tipo_produto: 'simples', tecidos: {} });
-  const [loadingTecidos, setLoadingTecidos] = useState(false);
-  const [tecidosSelecionados, setTecidosSelecionados] = useState({});
+   const [produtoId, setProdutoId] = useState("");
+   const [estruturaProduto, setEstruturaProduto] = useState({ tipo_produto: 'simples', tecidos: {}, opcao_acabamento: null });
+   const [loadingTecidos, setLoadingTecidos] = useState(false);
+   const [tecidosSelecionados, setTecidosSelecionados] = useState({});
 
   // Ref para evitar chamadas duplicadas de carregarEstrutura
   const carregandoEstruturaProdutoRef = useRef(null);
@@ -296,34 +296,39 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
 
 
   const carregarEstrutura = async (pid) => {
-    if (!pid) { setEstruturaProduto({ tipo_produto: 'simples', tecidos: {} }); return; }
-    
-    // Evita chamadas duplicadas simultâneas
-    if (carregandoEstruturaProdutoRef.current === pid) return;
-    carregandoEstruturaProdutoRef.current = pid;
-    
-    setLoadingTecidos(true);
-    try {
-      // Busca estrutura do produto via tabela_precos_sync
-      const { data: tps } = await supabase.from("tabela_precos_sync").select("*").eq("empresa_id", empresaId).eq("produto_id", pid).is("deleted_at", null);
-      if (!tps || tps.length === 0) { setEstruturaProduto({ tipo_produto: 'simples', tecidos: {} }); return; }
-      // Agrupa por variavel_index para montar estrutura de tecidos
-      const grupos = {};
-      tps.forEach(r => {
-        const idx = r.variavel_index || 1;
-        if (!grupos[idx]) grupos[idx] = { resumo: r.artigo_nome || '', opcoes: [] };
-        grupos[idx].opcoes.push({ id: r.id, codigo_unico: r.codigo_unico, linha_nome: r.linha_nome || '', artigo_nome: r.artigo_nome || '', cor_nome: r.cor_nome || '' });
-      });
-      const tipo = Object.keys(grupos).length > 1 ? 'composto' : 'simples';
-      setEstruturaProduto({ tipo_produto: tipo, tecidos: grupos });
-    } catch (err) {
-      console.error('[carregarEstrutura] Erro:', err.message);
-      setEstruturaProduto({ tipo_produto: 'simples', tecidos: {} });
-    } finally {
-      setLoadingTecidos(false);
-      carregandoEstruturaProdutoRef.current = null;
-    }
-  };
+     if (!pid) { setEstruturaProduto({ tipo_produto: 'simples', tecidos: {}, opcao_acabamento: null }); return; }
+
+     // Evita chamadas duplicadas simultâneas
+     if (carregandoEstruturaProdutoRef.current === pid) return;
+     carregandoEstruturaProdutoRef.current = pid;
+
+     setLoadingTecidos(true);
+     try {
+       // Busca estrutura do produto via tabela_precos_sync
+       const { data: tps } = await supabase.from("tabela_precos_sync").select("*").eq("empresa_id", empresaId).eq("produto_id", pid).is("deleted_at", null);
+       if (!tps || tps.length === 0) { setEstruturaProduto({ tipo_produto: 'simples', tecidos: {}, opcao_acabamento: null }); return; }
+       // Agrupa por variavel_index para montar estrutura de tecidos
+       const grupos = {};
+       let opcaoAcabamento = null;
+       tps.forEach(r => {
+         const idx = r.variavel_index || 1;
+         if (!grupos[idx]) grupos[idx] = { resumo: r.artigo_nome || '', opcoes: [] };
+         grupos[idx].opcoes.push({ id: r.id, codigo_unico: r.codigo_unico, linha_nome: r.linha_nome || '', artigo_nome: r.artigo_nome || '', cor_nome: r.cor_nome || '' });
+         // Captura opcao_acabamento do primeiro registro (mesmo para todos no produto)
+         if (opcaoAcabamento === null && r.opcao_acabamento !== null && r.opcao_acabamento !== undefined) {
+           opcaoAcabamento = r.opcao_acabamento;
+         }
+       });
+       const tipo = Object.keys(grupos).length > 1 ? 'composto' : 'simples';
+       setEstruturaProduto({ tipo_produto: tipo, tecidos: grupos, opcao_acabamento: opcaoAcabamento });
+     } catch (err) {
+       console.error('[carregarEstrutura] Erro:', err.message);
+       setEstruturaProduto({ tipo_produto: 'simples', tecidos: {}, opcao_acabamento: null });
+     } finally {
+       setLoadingTecidos(false);
+       carregandoEstruturaProdutoRef.current = null;
+     }
+   };
 
   // Reset ao abrir/fechar modal
   useEffect(() => {
@@ -698,7 +703,7 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
     } else {
       setProdutoId("");
       setTecidosSelecionados({});
-      setEstruturaProduto({ tipo_produto: 'simples', tecidos: {} });
+      setEstruturaProduto({ tipo_produto: 'simples', tecidos: {}, opcao_acabamento: null });
       setForm(prev => ({ ...prev, produto_id: "", nome_produto: "", codigo_unico: "", nome_linha_comercial: "", artigo_nome: "", nome_cor: "" }));
     }
   };
@@ -1085,12 +1090,17 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
                   <div className="flex flex-wrap gap-2">
                     {acabamentos.map(a => {
                       const sel = (form.acabamentos || []).includes(a.nome_acabamento);
+                      const opcaoAcabamento = estruturaProduto?.opcao_acabamento;
+                      const habilitado = opcaoAcabamento === true;
                       return (
                         <button key={a.id} type="button"
-                          onClick={() => toggleAcabamento(a.id, a.nome_acabamento)}
+                          onClick={() => habilitado && toggleAcabamento(a.id, a.nome_acabamento)}
+                          disabled={!habilitado}
                           className={`px-3 py-1 rounded-md text-sm font-medium border transition-all ${
-                            sel
-                              ? "bg-blue-600 text-white border-blue-600"
+                            !habilitado
+                              ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+                              : sel
+                              ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
                               : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
                           }`}
                         >
