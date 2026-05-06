@@ -80,11 +80,16 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
     artigosPorProduto[a.produto_id].push(a);
   });
 
-  // 2. Montar registros
-  const registros = [];
-  const agora = new Date().toISOString();
+  // 1.5. Buscar categorias de tamanho para mapear baseado nas categorias_tamanho do produto
+   const { data: categoriasDb } = await supabase.from('categorias_tamanho').select('id, nome').eq('empresa_id', empresa_id);
+   const categoriasMap = {};
+   (categoriasDb || []).forEach(c => { categoriasMap[c.nome?.toLowerCase()] = c.id; });
 
-  for (const produto of (produtos || [])) {
+   // 2. Montar registros
+   const registros = [];
+   const agora = new Date().toISOString();
+
+   for (const produto of (produtos || [])) {
     const artigosDoProduto = artigosPorProduto[produto.id] || [];
     const composicoesDoProduto = composicoesPorProduto[produto.id] || {};
     const numComposicoes = Object.keys(composicoesDoProduto).length;
@@ -114,52 +119,57 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
     const numVariaveis = parseInt(produto.num_variaveis) || 1;
     const isComposto = numVariaveis >= 2;
 
+    // Detecta primeira categoria para categoria_tamanho_id
+    const categoriasProduct = Array.isArray(produto.categorias_tamanho) ? produto.categorias_tamanho : [];
+    const categoriaTamanhoPrimeira = categoriasProduct[0];
+    const categoria_tamanho_id = categoriaTamanhoPrimeira ? categoriasMap[categoriaTamanhoPrimeira.toLowerCase()] : null;
+
     if (artigosDoProduto.length === 0) {
-      const composicoesJson = montarComposicoesJson('', false);
-      const consumo_un = parseFloat(composicoesJson.reduce((s, c) => s + (c.valor_total || 0), 0).toFixed(3));
-      const chave_equivalencia = await gerarChaveEquivalencia(produto.codigo_produto || '', '');
-      registros.push({
-         empresa_id, produto_id: produto.id,
-         codigo_produto: produto.codigo_produto || '',
-         nome_produto: produto.nome_produto,
-         codigo_unico: null, artigo_nome: null, cor_nome: null, linha_nome: null,
-         num_composicoes: numComposicoes, composicoes: composicoesJson, consumo_un,
-         indice: numComposicoes >= 1 ? 1 : null, custo_kg: null, custo_un: null,
-         tipo_produto: isComposto ? 'composto' : 'simples',
-         opcao_acabamento: produto.opcao_acabamento === true ? true : (produto.opcao_acabamento === false ? false : null),
-         status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
-       });
-    } else {
-      for (const artigo of artigosDoProduto) {
-        const vinculo = vinculosMap[artigo.vinculo_id] || {};
-        const descricao_artigo = [vinculo.artigo_nome, vinculo.cor_nome, vinculo.linha_nome].filter(Boolean).join(' | ');
-        const chave_equivalencia = await gerarChaveEquivalencia(produto.codigo_produto || '', descricao_artigo);
-        const composicoesJson = montarComposicoesJson(descricao_artigo, true, artigo.vinculo_id);
-        let consumo_un;
-        if (isComposto) {
-          const indiceDoProduto = parseInt(artigo.variavel_index) || 1;
-          const composicaoDoIndice = composicoesJson.find(c => c.indice === indiceDoProduto);
-          consumo_un = parseFloat((composicaoDoIndice?.valor_total || 0).toFixed(3));
-        } else {
-          consumo_un = parseFloat(composicoesJson.reduce((s, c) => s + (c.valor_total || 0), 0).toFixed(3));
-        }
-        registros.push({
+       const composicoesJson = montarComposicoesJson('', false);
+       const consumo_un = parseFloat(composicoesJson.reduce((s, c) => s + (c.valor_total || 0), 0).toFixed(3));
+       const chave_equivalencia = await gerarChaveEquivalencia(produto.codigo_produto || '', '');
+       registros.push({
           empresa_id, produto_id: produto.id,
           codigo_produto: produto.codigo_produto || '',
           nome_produto: produto.nome_produto,
-          codigo_unico: artigo.codigo_unico || null,
-          artigo_nome: vinculo.artigo_nome || null,
-          cor_nome: vinculo.cor_nome || null,
-          linha_nome: vinculo.linha_nome || null,
+          codigo_unico: null, artigo_nome: null, cor_nome: null, linha_nome: null,
           num_composicoes: numComposicoes, composicoes: composicoesJson, consumo_un,
-          indice: parseInt(artigo.variavel_index) || 1,
-          custo_kg: null, custo_un: null,
+          indice: numComposicoes >= 1 ? 1 : null, custo_kg: null, custo_un: null,
           tipo_produto: isComposto ? 'composto' : 'simples',
           opcao_acabamento: produto.opcao_acabamento === true ? true : (produto.opcao_acabamento === false ? false : null),
-          deleted_at: null, status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
+          categoria_tamanho_id, status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
         });
-      }
-    }
+     } else {
+       for (const artigo of artigosDoProduto) {
+         const vinculo = vinculosMap[artigo.vinculo_id] || {};
+         const descricao_artigo = [vinculo.artigo_nome, vinculo.cor_nome, vinculo.linha_nome].filter(Boolean).join(' | ');
+         const chave_equivalencia = await gerarChaveEquivalencia(produto.codigo_produto || '', descricao_artigo);
+         const composicoesJson = montarComposicoesJson(descricao_artigo, true, artigo.vinculo_id);
+         let consumo_un;
+         if (isComposto) {
+           const indiceDoProduto = parseInt(artigo.variavel_index) || 1;
+           const composicaoDoIndice = composicoesJson.find(c => c.indice === indiceDoProduto);
+           consumo_un = parseFloat((composicaoDoIndice?.valor_total || 0).toFixed(3));
+         } else {
+           consumo_un = parseFloat(composicoesJson.reduce((s, c) => s + (c.valor_total || 0), 0).toFixed(3));
+         }
+         registros.push({
+           empresa_id, produto_id: produto.id,
+           codigo_produto: produto.codigo_produto || '',
+           nome_produto: produto.nome_produto,
+           codigo_unico: artigo.codigo_unico || null,
+           artigo_nome: vinculo.artigo_nome || null,
+           cor_nome: vinculo.cor_nome || null,
+           linha_nome: vinculo.linha_nome || null,
+           num_composicoes: numComposicoes, composicoes: composicoesJson, consumo_un,
+           indice: parseInt(artigo.variavel_index) || 1,
+           custo_kg: null, custo_un: null,
+           tipo_produto: isComposto ? 'composto' : 'simples',
+           opcao_acabamento: produto.opcao_acabamento === true ? true : (produto.opcao_acabamento === false ? false : null),
+           categoria_tamanho_id, deleted_at: null, status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
+         });
+       }
+     }
   }
 
   // 3. Resolver grupo_id
