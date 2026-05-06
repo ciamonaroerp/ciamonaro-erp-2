@@ -18,8 +18,6 @@ import { sincronizarTabelaPrecos } from "@/utils/sincronizarTabelaPrecos";
 
 const EMPTY = { nome_produto: "", descricao: "", status: "Ativo", variáveis: 1, categorias_tamanho: [], opcao_acabamento: null };
 
-const CATEGORIAS_TAMANHO = ["Infantil", "Juvenil", "Adulto"];
-
 async function fetchProdutos(empresa_id) {
   if (!empresa_id) return [];
   const { data } = await supabase
@@ -192,6 +190,22 @@ export default function ProdutoComercialPage() {
     queryKey: ["config-vinculos-produto", empresa_id],
     queryFn: () => fetchVinculos(empresa_id),
     enabled: !!modalOpen,
+    staleTime: 60000,
+  });
+
+  const { data: categoriaTamanhos = [] } = useQuery({
+    queryKey: ["config-tamanhos", empresa_id],
+    queryFn: async () => {
+      if (!empresa_id) return [];
+      const { data } = await supabase
+        .from('config_tamanhos')
+        .select('categoria')
+        .eq('empresa_id', empresa_id)
+        .is('deleted_at', null)
+        .order('categoria');
+      return (data || []).map(d => d.categoria);
+    },
+    enabled: !!empresa_id,
     staleTime: 60000,
   });
 
@@ -701,7 +715,7 @@ export default function ProdutoComercialPage() {
                    Categorias de Tamanho *
                  </label>
                  <div className="flex flex-wrap gap-2">
-                   {CATEGORIAS_TAMANHO.map(cat => {
+                   {categoriaTamanhos.map(cat => {
                      const sel = (Array.isArray(formData.categorias_tamanho) ? formData.categorias_tamanho : []).includes(cat);
                      return (
                        <label key={cat} className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
