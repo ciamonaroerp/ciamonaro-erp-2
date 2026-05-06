@@ -152,8 +152,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
        }
      }
      // Mapeia primeiro nome da categoria para UUID (ou cria se não existir)
-     const categoriaNome = categoriasProduct[0];
-     const categoria_tamanho_id = categoriaNome ? await obterOuCriarCategoria(categoriaNome) : null;
+     const categoria_tamanho_id = await obterOuCriarCategoria(categoriasProduct[0]);
 
     if (artigosDoProduto.length === 0) {
        const composicoesJson = montarComposicoesJson('', false);
