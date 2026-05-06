@@ -13,9 +13,11 @@ Deno.serve(async (req) => {
 
     const SUPABASE_URL = Deno.env.get('VITE_SUPABASE_URL');
     const SUPABASE_KEY = Deno.env.get('VITE_SUPABASE_ANON_KEY');
+    // Usa o token JWT do usuário autenticado para respeitar o contexto de acesso
+    const userToken = (req.headers.get('Authorization') || '').replace('Bearer ', '') || SUPABASE_KEY;
     const headers = {
       'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Authorization': `Bearer ${userToken}`,
       'Content-Type': 'application/json'
     };
 
