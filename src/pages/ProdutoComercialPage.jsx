@@ -432,10 +432,13 @@ export default function ProdutoComercialPage() {
         await saveComposicaoMutation.mutateAsync({ produto_id: editingId, composicoes_por_variavel: composicoesPorVariavel });
 
         // Salva consumo/custo de todos os artigos vinculados
+        const produtoAtual = produtos.find(p => p.id === editingId);
         const artigosParaSalvar = multiComposicoes
           .filter(c => c.codigo_unico)
           .map(c => ({
             codigo_unico: c.codigo_unico,
+            codigo_produto: produtoAtual?.codigo_produto || formData.codigo_produto || '',
+            nome_produto: produtoAtual?.nome_produto || formData.nome_produto || '',
             consumo_un: parseFloat(String(c.consumo_un ?? '').replace(',', '.')) || 0,
             custo_kg: parseFloat(String(c.custo_kg ?? '').replace(',', '.')) || 0,
             indice: parseInt(c.indice) || 1,
