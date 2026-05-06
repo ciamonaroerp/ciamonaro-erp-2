@@ -1,3 +1,22 @@
+-- Cria tabela CategoriasTamanho com categorias únicas de config_tamanhos
+CREATE TABLE IF NOT EXISTS "CategoriasTamanho" (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  empresa_id UUID NOT NULL,
+  nome TEXT NOT NULL,
+  descricao TEXT,
+  ativo BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now(),
+  UNIQUE(empresa_id, nome)
+);
+
+-- Popula CategoriasTamanho com categorias únicas de config_tamanhos
+INSERT INTO "CategoriasTamanho" (empresa_id, nome)
+SELECT DISTINCT empresa_id, categoria 
+FROM config_tamanhos
+WHERE categoria IS NOT NULL
+ON CONFLICT (empresa_id, nome) DO NOTHING;
+
 -- Adiciona coluna categoria_tamanho_id em config_tamanhos
 ALTER TABLE config_tamanhos
 ADD COLUMN IF NOT EXISTS categoria_tamanho_id UUID REFERENCES "CategoriasTamanho"(id);
