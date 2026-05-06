@@ -361,7 +361,7 @@ export default function CustoProdutoPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('tabela_precos_sync')
-        .select('id, codigo_produto, nome_produto, codigo_unico, produto_id, status, sincronizado_em, custo_kg, custo_un, num_composicoes, num_variaveis, composicoes, grupo_id, artigo_nome, cor_nome, tipo_produto')
+        .select('id, codigo_produto, nome_produto, codigo_unico, produto_id, status, sincronizado_em, custo_kg, custo_un, num_composicoes, composicoes, grupo_id, artigo_nome, cor_nome, tipo_produto')
         .eq('empresa_id', empresa_id)
         .order('codigo_produto', { ascending: true });
       if (error) { console.error('[CustoProduto] query error:', error); return []; }
@@ -370,14 +370,14 @@ export default function CustoProdutoPage() {
     enabled: !!empresa_id,
   });
 
-  // Simples: 1 variável (ou num_variaveis nulo/0, considerado simples)
-  // Composto: mais de 1 variável
+  // Simples: num_composicoes <= 1
+  // Composto: num_composicoes > 1
   const data = useMemo(() =>
-    todosRegistros.filter(r => !r.num_variaveis || parseInt(r.num_variaveis) <= 1),
+    todosRegistros.filter(r => !r.num_composicoes || parseInt(r.num_composicoes) <= 1),
   [todosRegistros]);
 
   const dataCompostos = useMemo(() =>
-    todosRegistros.filter(r => parseInt(r.num_variaveis) > 1),
+    todosRegistros.filter(r => parseInt(r.num_composicoes) > 1),
   [todosRegistros]);
 
   const itensFiltrados = useMemo(() => {
