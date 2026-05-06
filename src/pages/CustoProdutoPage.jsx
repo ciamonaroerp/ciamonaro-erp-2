@@ -123,14 +123,17 @@ function ModalConfirmacaoCusto({ open, onClose, codigoUnico, produtoId, descrica
     if (codigoUnico) params.codigo_unico = codigoUnico;
     else params.produto_id = produtoId;
 
-    supabase.from("historico_precos_produto_erp").select("*").eq("empresa_id", empresa_id).eq(codigoUnico ? "codigo_unico" : "produto_id", codigoUnico || produtoId).order("data_nf", { ascending: false }).limit(10).then(({ data: histData }) => {
+    supabase.from("ultimo_preco_produto").select("*").eq("empresa_id", empresa_id).eq("codigo_unico", codigoUnico || produtoId).then(({ data: histData }) => {
       if (!histData || histData.length === 0) { setSemHistorico(true); setCarregando(false); return; }
-      const precos = histData.map(h => h.preco_kg).filter(Boolean);
-      const media = precos.reduce((a, b) => a + b, 0) / precos.length;
-      const ultimo = precos[0];
-      const cache = { ultimo, media, preco: media, min: Math.min(...precos), max: Math.max(...precos), quantidade_amostras: precos.length, alerta: Math.abs(ultimo - media) / media > 0.2, fornecedor_nome: histData[0]?.fornecedor_nome, numero_nf: histData[0]?.numero_nf, data: histData[0]?.data_nf };
+      const row = histData[0];
+      const ultimo = parseFloat(row.ultimo_preco) || 0;
+      const media = parseFloat(row.media_preco) || ultimo;
+      const min = parseFloat(row.preco_min) || ultimo;
+      const max = parseFloat(row.preco_max) || ultimo;
+      const quantidade_amostras = row.quantidade_amostras || 1;
+      const alerta = media > 0 && Math.abs(ultimo - media) / media > 0.2;
       const custoAtualNum = Number(custoAtual || 0);
-      setDados({ custo_atual: custoAtualNum, ultimo: cache.ultimo, media: cache.media, sugerido: cache.preco, min: cache.min, max: cache.max, quantidade_amostras: cache.quantidade_amostras, alerta: cache.alerta, fornecedor: cache.fornecedor_nome, numero_nf: cache.numero_nf, data_nf: cache.data });
+      setDados({ custo_atual: custoAtualNum, ultimo, media, sugerido: media, min, max, quantidade_amostras, alerta, fornecedor: row.fornecedor_nome, numero_nf: row.numero_nf, data_nf: row.data_ultima_nf });
       setCarregando(false);
     }).catch(() => { setSemHistorico(true); setCarregando(false); });
   }, [open, codigoUnico, produtoId, custoAtual, empresa_id]);
