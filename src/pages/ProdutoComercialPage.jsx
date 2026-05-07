@@ -15,8 +15,9 @@ import { useGlobalAlert } from "@/components/GlobalAlertDialog";
 import { cn } from "@/lib/utils";
 import { ErpTableContainer } from "@/components/design-system";
 import { sincronizarTabelaPrecos } from "@/utils/sincronizarTabelaPrecos";
+import { useGradesTamanho } from "@/hooks/useGradesTamanho";
 
-const EMPTY = { nome_produto: "", descricao: "", status: "Ativo", variáveis: 1, categorias_tamanho: [], opcao_acabamento: null };
+const EMPTY = { nome_produto: "", descricao: "", status: "Ativo", variáveis: 1, categorias_tamanho: [], opcao_acabamento: null, grade_tamanho_id: null };
 
 async function fetchProdutos(empresa_id) {
   if (!empresa_id) return [];
@@ -117,6 +118,8 @@ export default function ProdutoComercialPage() {
   const { empresa_id } = useEmpresa();
   const qc = useQueryClient();
   const { showError, showDelete, showSuccess } = useGlobalAlert();
+  const { grades } = useGradesTamanho();
+  const gradesAtivas = grades.filter(g => g.ativo !== false);
   const [userEmail, setUserEmail] = React.useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -761,6 +764,24 @@ export default function ProdutoComercialPage() {
                  </div>
                </div>
              </div>
+
+            {/* Grade de Tamanho */}
+            <div>
+              <label className="text-sm font-medium text-slate-900 block mb-1">Grade de Tamanho</label>
+              <select
+                value={formData.grade_tamanho_id || ""}
+                onChange={e => setFormData(p => ({ ...p, grade_tamanho_id: e.target.value || null }))}
+                className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">Selecione uma grade de tamanho...</option>
+                {gradesAtivas.map(g => (
+                  <option key={g.id} value={g.id}>{g.nome_grade}</option>
+                ))}
+              </select>
+              {gradesAtivas.length === 0 && (
+                <p className="text-xs text-amber-600 mt-1">Nenhuma grade ativa cadastrada. Cadastre em Configuração Extras → Grades de Tamanho.</p>
+              )}
+            </div>
 
             <div className="grid gap-4" style={{ gridTemplateColumns: 'minmax(0,80px) 1fr' }}>
               <div>
