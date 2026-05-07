@@ -25,17 +25,17 @@ export function useGradesTamanhoItens(gradeId) {
 
   const invalidar = () => queryClient.invalidateQueries({ queryKey });
 
-  const criar = async (form) => {
+  const criar = async (form, tamanhoSelecionado) => {
     const erro = validarItem(form);
     if (erro) throw new Error(erro);
-    await criarItem(prepararPayloadCriar(gradeId, form));
+    await criarItem(prepararPayloadCriar(gradeId, form, tamanhoSelecionado));
     invalidar();
   };
 
-  const atualizar = async (id, form) => {
+  const atualizar = async (id, form, tamanhoSelecionado) => {
     const erro = validarItem(form);
     if (erro) throw new Error(erro);
-    await atualizarItem(id, prepararPayloadAtualizar(form));
+    await atualizarItem(id, prepararPayloadAtualizar(form, tamanhoSelecionado));
     invalidar();
   };
 

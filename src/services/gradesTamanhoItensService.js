@@ -6,7 +6,7 @@ export async function listarItensPorGrade(gradeId) {
   if (!supabase || !gradeId) return [];
   const { data, error } = await supabase
     .from(TABELA)
-    .select("*")
+    .select("*, tamanhos(id, codigo, descricao)")
     .eq("grade_id", gradeId)
     .order("ordem", { ascending: true });
   if (error) throw new Error(error.message);

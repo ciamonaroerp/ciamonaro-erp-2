@@ -12,9 +12,11 @@ import { Plus, Pencil, Trash2, Loader2, ToggleLeft, ToggleRight, ArrowLeft } fro
 import { useGradesTamanhoItens } from "@/hooks/useGradesTamanhoItens";
 import { itemFormVazio } from "@/domain/gradesTamanhoItensDomain";
 import { useGlobalAlert } from "@/components/GlobalAlertDialog";
+import { useTamanhos } from "@/hooks/useTamanhos";
 
 export default function GradeItensPanel({ grade, onVoltar }) {
   const { itens, loading, criar, atualizar, remover, toggleAtivo } = useGradesTamanhoItens(grade?.id);
+  const { tamanhos, loading: tamanhosLoading } = useTamanhos();
   const { showSuccess, showError, showConfirm } = useGlobalAlert();
 
   const [modal, setModal] = useState(false);
@@ -22,13 +24,27 @@ export default function GradeItensPanel({ grade, onVoltar }) {
   const [form, setForm] = useState(itemFormVazio);
   const [saving, setSaving] = useState(false);
 
+  // Tamanhos ativos disponíveis para seleção
+  const tamanhosAtivos = tamanhos.filter(t => t.ativo !== false);
+
+  // Tamanho selecionado no form atual
+  const tamanhoSelecionado = tamanhosAtivos.find(t => t.id === form.tamanho_id) || null;
+
   const abrirModal = (item = null) => {
     if (item) {
       setEditingId(item.id);
-      setForm({ titulo: item.titulo || "", ordem: item.ordem ?? "", ativo: item.ativo !== false });
+      // Detecta se o título é customizado (diferente do código do tamanho)
+      const tamanhoDoItem = item.tamanhos || tamanhosAtivos.find(t => t.id === item.tamanho_id);
+      const codigoTamanho = tamanhoDoItem?.codigo || "";
+      const tituloVisual = item.titulo !== codigoTamanho ? (item.titulo || "") : "";
+      setForm({
+        tamanho_id: item.tamanho_id || "",
+        titulo_visual: tituloVisual,
+        ordem: item.ordem ?? "",
+        ativo: item.ativo !== false,
+      });
     } else {
       setEditingId(null);
-      // Sugere próxima ordem automaticamente
       const proxOrdem = itens.length > 0 ? Math.max(...itens.map(i => i.ordem || 0)) + 1 : 1;
       setForm({ ...itemFormVazio, ordem: String(proxOrdem) });
     }
@@ -45,10 +61,10 @@ export default function GradeItensPanel({ grade, onVoltar }) {
     setSaving(true);
     try {
       if (editingId) {
-        await atualizar(editingId, form);
+        await atualizar(editingId, form, tamanhoSelecionado);
         showSuccess({ title: "Atualizado", description: "Item atualizado com sucesso." });
       } else {
-        await criar(form);
+        await criar(form, tamanhoSelecionado);
         showSuccess({ title: "Sucesso", description: "Item adicionado com sucesso." });
       }
       fecharModal();
@@ -84,6 +100,11 @@ export default function GradeItensPanel({ grade, onVoltar }) {
     }
   };
 
+  // Resolve exibição do código do tamanho na listagem
+  const getCodigoTamanho = (item) => {
+    return item.tamanhos?.codigo || tamanhosAtivos.find(t => t.id === item.tamanho_id)?.codigo || "—";
+  };
+
   return (
     <div className="space-y-4">
       {/* Header com breadcrumb */}
@@ -111,7 +132,8 @@ export default function GradeItensPanel({ grade, onVoltar }) {
           <TableHeader>
             <TableRow>
               <TableHead className="w-16">Ordem</TableHead>
-              <TableHead>Título</TableHead>
+              <TableHead>Tamanho Global</TableHead>
+              <TableHead>Título Visual</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
@@ -119,13 +141,13 @@ export default function GradeItensPanel({ grade, onVoltar }) {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-8">
+                <TableCell colSpan={5} className="text-center py-8">
                   <Loader2 className="h-5 w-5 animate-spin mx-auto text-slate-400" />
                 </TableCell>
               </TableRow>
             ) : itens.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={5} className="text-center py-8 text-slate-500">
                   Nenhum item cadastrado nesta grade
                 </TableCell>
               </TableRow>
@@ -133,7 +155,10 @@ export default function GradeItensPanel({ grade, onVoltar }) {
               itens.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-mono text-slate-500 text-sm">{item.ordem ?? "—"}</TableCell>
-                  <TableCell className="font-medium">{item.titulo}</TableCell>
+                  <TableCell>
+                    <span className="font-mono font-semibold text-slate-800">{getCodigoTamanho(item)}</span>
+                  </TableCell>
+                  <TableCell className="text-slate-600">{item.titulo || "—"}</TableCell>
                   <TableCell>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${item.ativo ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
                       {item.ativo ? "Ativo" : "Inativo"}
@@ -163,19 +188,52 @@ export default function GradeItensPanel({ grade, onVoltar }) {
       <Dialog open={modal} onOpenChange={(v) => { if (!v) fecharModal(); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingId ? "Editar Item" : "Novo Item da Grade"}</DialogTitle>
+            <DialogTitle>{editingId ? "Editar Item da Grade" : "Novo Item da Grade"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+
+            {/* Tamanho Global — obrigatório */}
             <div>
-              <label className="text-sm font-medium">Título *</label>
+              <label className="text-sm font-medium">Tamanho Global *</label>
+              <select
+                value={form.tamanho_id}
+                onChange={e => setForm(p => ({ ...p, tamanho_id: e.target.value }))}
+                className="mt-1 w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                disabled={tamanhosLoading}
+              >
+                <option value="">Selecione um tamanho global...</option>
+                {tamanhosAtivos.map(t => (
+                  <option key={t.id} value={t.id}>
+                    {t.codigo} — {t.descricao}
+                  </option>
+                ))}
+              </select>
+              {tamanhosAtivos.length === 0 && !tamanhosLoading && (
+                <p className="text-xs text-amber-600 mt-1">
+                  Nenhum tamanho global ativo cadastrado. Cadastre primeiro na seção "Tamanhos Globais".
+                </p>
+              )}
+            </div>
+
+            {/* Título Visual — opcional */}
+            <div>
+              <label className="text-sm font-medium">
+                Título Visual
+                <span className="ml-1 text-slate-400 font-normal text-xs">(opcional)</span>
+              </label>
               <Input
-                value={form.titulo}
-                onChange={e => setForm(p => ({ ...p, titulo: e.target.value }))}
-                placeholder="Ex: P, M, G, GG ou 02, 04, 06..."
+                value={form.titulo_visual}
+                onChange={e => setForm(p => ({ ...p, titulo_visual: e.target.value }))}
+                placeholder={tamanhoSelecionado ? `Padrão: ${tamanhoSelecionado.codigo}` : "Selecione um tamanho global primeiro"}
                 className="mt-1"
                 autoComplete="off"
               />
+              <p className="text-xs text-slate-400 mt-1">
+                Se vazio, será usado automaticamente o código do tamanho global.
+              </p>
             </div>
+
+            {/* Ordem */}
             <div>
               <label className="text-sm font-medium">Ordem</label>
               <Input
@@ -187,6 +245,8 @@ export default function GradeItensPanel({ grade, onVoltar }) {
                 className="mt-1"
               />
             </div>
+
+            {/* Ativo */}
             <div className="flex items-center gap-3">
               <label className="text-sm font-medium">Ativo</label>
               <input
