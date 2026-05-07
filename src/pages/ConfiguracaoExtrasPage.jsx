@@ -35,6 +35,7 @@ import { useEmpresa } from "@/components/context/EmpresaContext";
 import { useGradesTamanho } from "@/hooks/useGradesTamanho";
 import { formVazio as gradeFormVazio } from "@/domain/gradesTamanhoDomain";
 import GradeItensPanel from "@/components/grades/GradeItensPanel";
+import TamanhosGlobaisPanel from "@/components/grades/TamanhosGlobaisPanel";
 
 // ─── Serviços ──────────────────────────────────────────────────────────────
 
@@ -969,11 +970,19 @@ export default function ConfiguracaoExtrasPage() {
           />
         </TabsContent>
         {/* ABA 6 — GRADES DE TAMANHO */}
-        <TabsContent value="grades" className="space-y-4">
+        <TabsContent value="grades" className="space-y-6">
           {gradeSelecionada ? (
             <GradeItensPanel grade={gradeSelecionada} onVoltar={() => setGradeSelecionada(null)} />
           ) : (
             <>
+              {/* Seção: Tamanhos Globais */}
+              <TamanhosGlobaisPanel />
+
+              {/* Divisor */}
+              <div className="border-t border-slate-200 pt-2">
+                <p className="text-sm font-semibold text-slate-700 mb-4">Grades de Tamanho</p>
+              </div>
+
               <div className="flex items-center justify-between gap-3">
                 <Input
                   placeholder="Buscar grade..."
