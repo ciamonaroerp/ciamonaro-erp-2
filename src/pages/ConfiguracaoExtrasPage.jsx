@@ -28,10 +28,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, ToggleLeft, ToggleRight } from "lucide-react";
 import { supabase } from "@/components/lib/supabaseClient";
 import { useGlobalAlert } from "@/components/GlobalAlertDialog";
 import { useEmpresa } from "@/components/context/EmpresaContext";
+import { useGradesTamanho } from "@/hooks/useGradesTamanho";
+import { formVazio as gradeFormVazio } from "@/domain/gradesTamanhoDomain";
 
 // ─── Serviços ──────────────────────────────────────────────────────────────
 
@@ -189,6 +191,14 @@ export default function ConfiguracaoExtrasPage() {
   const [editingId, setEditingId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [saving, setSaving] = useState(false);
+
+  // ── Grades de Tamanho ──
+  const { grades, loading: gradesLoading, criar: criarGrade, atualizar: atualizarGrade, toggleAtivo: toggleAtivoGrade } = useGradesTamanho();
+  const [gradeModal, setGradeModal] = useState(false);
+  const [gradeEditingId, setGradeEditingId] = useState(null);
+  const [gradeForm, setGradeForm] = useState(gradeFormVazio);
+  const [gradeSaving, setGradeSaving] = useState(false);
+  const [gradeBusca, setGradeBusca] = useState("");
 
   // ── Estado Tamanhos ──
   const [tamanhoModal, setTamanhoModal] = useState(false);
@@ -600,6 +610,50 @@ export default function ConfiguracaoExtrasPage() {
     });
   };
 
+  // ── Handlers Grades de Tamanho ──
+  const handleGradeOpen = (item = null) => {
+    if (item) {
+      setGradeEditingId(item.id);
+      setGradeForm({ nome_grade: item.nome_grade || "", ativo: item.ativo !== false });
+    } else {
+      setGradeEditingId(null);
+      setGradeForm(gradeFormVazio);
+    }
+    setGradeModal(true);
+  };
+
+  const handleGradeSave = async () => {
+    setGradeSaving(true);
+    try {
+      if (gradeEditingId) {
+        await atualizarGrade(gradeEditingId, gradeForm);
+        showSuccess({ title: "Atualizado", description: "Grade atualizada com sucesso." });
+      } else {
+        await criarGrade(gradeForm);
+        showSuccess({ title: "Sucesso", description: "Grade criada com sucesso." });
+      }
+      setGradeModal(false);
+      setGradeEditingId(null);
+      setGradeForm(gradeFormVazio);
+    } catch (err) {
+      showError({ title: "Erro ao salvar", description: err.message });
+    }
+    setGradeSaving(false);
+  };
+
+  const handleGradeToggle = async (id, ativo) => {
+    try {
+      await toggleAtivoGrade(id, ativo);
+      showSuccess({ title: "Atualizado", description: `Grade ${ativo ? "desativada" : "ativada"} com sucesso.` });
+    } catch (err) {
+      showError({ title: "Erro", description: err.message });
+    }
+  };
+
+  const gradesFiltradas = grades.filter(g =>
+    !gradeBusca.trim() || g.nome_grade?.toLowerCase().includes(gradeBusca.toLowerCase())
+  );
+
   const handleEstampariaDelete = (id) => {
     if (vinculosEstamparia[id]) {
       showError({
@@ -669,12 +723,13 @@ export default function ConfiguracaoExtrasPage() {
       </div>
 
       <Tabs defaultValue="acabamento" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 mb-6">
+        <TabsList className="grid w-full grid-cols-6 mb-6">
           <TabsTrigger value="acabamento">Acabamentos Especiais</TabsTrigger>
           <TabsTrigger value="personalizacao">Tipos de Personalização</TabsTrigger>
           <TabsTrigger value="dependencia">Itens adicionais</TabsTrigger>
           <TabsTrigger value="estamparia">Parâmetros estamparia</TabsTrigger>
           <TabsTrigger value="tamanhos">Definição de Tamanhos</TabsTrigger>
+          <TabsTrigger value="grades">Grades de Tamanho</TabsTrigger>
         </TabsList>
 
         {/* ABA 1 — ACABAMENTOS */}
@@ -911,7 +966,117 @@ export default function ConfiguracaoExtrasPage() {
             onDeletar={(id) => handleTamanhoDelete(id)}
           />
         </TabsContent>
+        {/* ABA 6 — GRADES DE TAMANHO */}
+        <TabsContent value="grades" className="space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <Input
+              placeholder="Buscar grade..."
+              value={gradeBusca}
+              onChange={e => setGradeBusca(e.target.value)}
+              className="max-w-xs"
+            />
+            <Button onClick={() => handleGradeOpen()} className="gap-2 bg-blue-600 hover:bg-blue-700">
+              <Plus className="h-4 w-4" />
+              Nova Grade
+            </Button>
+          </div>
+          <Card className="overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome da Grade</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Data de Criação</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {gradesLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8">
+                      <Loader2 className="h-5 w-5 animate-spin mx-auto text-slate-400" />
+                    </TableCell>
+                  </TableRow>
+                ) : gradesFiltradas.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8 text-slate-500">
+                      Nenhuma grade cadastrada
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  gradesFiltradas.map((grade) => (
+                    <TableRow key={grade.id}>
+                      <TableCell className="font-medium">{grade.nome_grade}</TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${grade.ativo ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
+                          {grade.ativo ? "Ativo" : "Inativo"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-slate-500">
+                        {grade.created_at ? new Date(grade.created_at).toLocaleDateString("pt-BR") : "-"}
+                      </TableCell>
+                      <TableCell className="text-right space-x-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-slate-400 hover:text-blue-600"
+                          title={grade.ativo ? "Desativar" : "Ativar"}
+                          onClick={() => handleGradeToggle(grade.id, grade.ativo)}
+                        >
+                          {grade.ativo
+                            ? <ToggleRight className="h-4 w-4 text-green-500" />
+                            : <ToggleLeft className="h-4 w-4 text-slate-400" />}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-slate-400 hover:text-slate-600" onClick={() => handleGradeOpen(grade)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* MODAL GRADES DE TAMANHO */}
+      <Dialog open={gradeModal} onOpenChange={(v) => { if (!v) { setGradeModal(false); setGradeEditingId(null); setGradeForm(gradeFormVazio); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{gradeEditingId ? "Editar Grade de Tamanho" : "Nova Grade de Tamanho"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Nome da Grade *</label>
+              <Input
+                value={gradeForm.nome_grade}
+                onChange={e => setGradeForm(p => ({ ...p, nome_grade: e.target.value }))}
+                placeholder="Ex: Grade Adulto P/M/G/GG"
+                className="mt-1"
+                autoComplete="off"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium">Ativo</label>
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-blue-600"
+                checked={gradeForm.ativo}
+                onChange={e => setGradeForm(p => ({ ...p, ativo: e.target.checked }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setGradeModal(false); setGradeEditingId(null); setGradeForm(gradeFormVazio); }} disabled={gradeSaving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleGradeSave} className="bg-blue-600 hover:bg-blue-700" disabled={gradeSaving}>
+              {gradeSaving ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Salvando...</> : gradeEditingId ? "Atualizar" : "Adicionar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* MODAL TAMANHOS */}
       <Dialog open={tamanhoModal} onOpenChange={(v) => { if (!v) { setTamanhoModal(false); setTamanhoEditingId(null); setTamanhoForm({ tamanho_abreviado: "", descricao: "" }); } }}>
