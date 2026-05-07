@@ -442,24 +442,30 @@ export default function RendimentosTabSimplificado({ itemsPendentes = false, onS
    const sincronizarOpcaoAcabamento = async () => {
      if (!editingProduto?.id) return;
 
-     // Busca opcao_acabamento da tabela produto_comercial
+     // Busca opcao_acabamento e grade_tamanho_id da tabela produto_comercial
      const { data: produtoData } = await supabase
        .from('produto_comercial')
-       .select('opcao_acabamento')
+       .select('opcao_acabamento, grade_tamanho_id')
        .eq('id', editingProduto.id)
        .maybeSingle();
 
-     const opcaoAcabamento = produtoData?.opcao_acabamento;
+     const updatePayload = {};
 
-     // Atualiza tabela_precos_sync com o valor de opcao_acabamento
-     if (opcaoAcabamento !== null && opcaoAcabamento !== undefined) {
+     if (produtoData?.opcao_acabamento !== null && produtoData?.opcao_acabamento !== undefined) {
+       updatePayload.opcao_acabamento = produtoData.opcao_acabamento;
+     }
+
+     // Sempre sincroniza grade_tamanho_id (mesmo que seja null — mantém campo atualizado)
+     updatePayload.grade_tamanho_id = produtoData?.grade_tamanho_id || null;
+
+     if (Object.keys(updatePayload).length > 0) {
        const { error } = await supabase
          .from('tabela_precos_sync')
-         .update({ opcao_acabamento: opcaoAcabamento })
+         .update(updatePayload)
          .eq('produto_id', editingProduto.id);
 
        if (error) {
-         console.warn('Aviso ao sincronizar opcao_acabamento:', error.message);
+         console.warn('Aviso ao sincronizar campos do produto:', error.message);
        }
      }
    };

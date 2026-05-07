@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
       { data: valores },
     ] = await Promise.all([
       (() => {
-        let q = supabase.from('produto_comercial').select('id, codigo_produto, nome_produto, num_variaveis').eq('empresa_id', empresa_id).is('deleted_at', null);
+        let q = supabase.from('produto_comercial').select('id, codigo_produto, nome_produto, num_variaveis, grade_tamanho_id').eq('empresa_id', empresa_id).is('deleted_at', null);
         if (codigo_produto) q = q.eq('codigo_produto', codigo_produto);
         return q;
       })(),
@@ -164,6 +164,7 @@ Deno.serve(async (req) => {
             artigo_nome: null,
             cor_nome: null,
             linha_nome: null,
+            grade_tamanho_id: produto.grade_tamanho_id || null,
             categoria_tamanho_id,
             num_composicoes: numComposicoes,
             composicoes: composicoesJson,
@@ -204,6 +205,7 @@ Deno.serve(async (req) => {
               artigo_nome: vinculo.artigo_nome || null,
               cor_nome: vinculo.cor_nome || null,
               linha_nome: vinculo.linha_nome || null,
+              grade_tamanho_id: produto.grade_tamanho_id || null,
               categoria_tamanho_id,
               num_composicoes: numComposicoes,
               composicoes: composicoesJson,

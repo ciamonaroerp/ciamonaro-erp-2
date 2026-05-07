@@ -36,7 +36,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
      { data: categoriasConfig },
    ] = await Promise.all([
     (() => {
-       let q = supabase.from('produto_comercial').select('id, codigo_produto, nome_produto, num_variaveis, opcao_acabamento, categorias_tamanho').eq('empresa_id', empresa_id).is('deleted_at', null);
+       let q = supabase.from('produto_comercial').select('id, codigo_produto, nome_produto, num_variaveis, opcao_acabamento, categorias_tamanho, grade_tamanho_id').eq('empresa_id', empresa_id).is('deleted_at', null);
       if (codigo_produto) q = q.eq('codigo_produto', codigo_produto);
       return q;
     })(),
@@ -163,8 +163,9 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
           indice: numComposicoes >= 1 ? 1 : null, custo_kg: null, custo_un: null,
           tipo_produto: isComposto ? 'composto' : 'simples',
           opcao_acabamento: produto.opcao_acabamento === true ? true : (produto.opcao_acabamento === false ? false : null),
+          grade_tamanho_id: produto.grade_tamanho_id || null,
           categoria_tamanho_id, status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
-        });
+          });
      } else {
        for (const artigo of artigosDoProduto) {
          const vinculo = vinculosMap[artigo.vinculo_id] || {};
@@ -192,6 +193,7 @@ export async function sincronizarTabelaPrecos({ empresa_id, codigo_produto, arti
            custo_kg: null, custo_un: null,
            tipo_produto: isComposto ? 'composto' : 'simples',
            opcao_acabamento: produto.opcao_acabamento === true ? true : (produto.opcao_acabamento === false ? false : null),
+           grade_tamanho_id: produto.grade_tamanho_id || null,
            categoria_tamanho_id, deleted_at: null, status: 'ativo', sincronizado_em: agora, updated_at: agora, chave_equivalencia,
          });
        }
