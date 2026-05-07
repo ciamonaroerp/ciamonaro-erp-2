@@ -17,7 +17,7 @@ import { ErpTableContainer } from "@/components/design-system";
 import { sincronizarTabelaPrecos } from "@/utils/sincronizarTabelaPrecos";
 import { useGradesTamanho } from "@/hooks/useGradesTamanho";
 
-const EMPTY = { nome_produto: "", descricao: "", status: "Ativo", variáveis: 1, categorias_tamanho: [], opcao_acabamento: null, grade_tamanho_id: null };
+const EMPTY = { nome_produto: "", descricao: "", status: "Ativo", variáveis: 1, opcao_acabamento: null, grade_tamanho_id: null };
 
 async function fetchProdutos(empresa_id) {
   if (!empresa_id) return [];
@@ -196,22 +196,7 @@ export default function ProdutoComercialPage() {
     staleTime: 60000,
   });
 
-  const { data: categoriaTamanhos = [] } = useQuery({
-    queryKey: ["config-tamanhos", empresa_id],
-    queryFn: async () => {
-      if (!empresa_id) return [];
-      const { data } = await supabase
-        .from('config_tamanhos')
-        .select('categoria')
-        .eq('empresa_id', empresa_id)
-        .is('deleted_at', null)
-        .order('categoria');
-      const categorias = (data || []).map(d => d.categoria);
-      return [...new Set(categorias)];
-    },
-    enabled: !!empresa_id,
-    staleTime: 60000,
-  });
+
 
   // (init_produto_composicao removido — tabelas criadas via migration)
 
@@ -430,22 +415,10 @@ export default function ProdutoComercialPage() {
     setComposicaoSearch("");
   };
 
-  const toggleCategoria = (cat) => {
-    setFormData(p => {
-      const atual = Array.isArray(p.categorias_tamanho) ? p.categorias_tamanho : [];
-      return {
-        ...p,
-        categorias_tamanho: atual.includes(cat) ? atual.filter(c => c !== cat) : [...atual, cat],
-      };
-    });
-  };
-
   const handleSubmit = async () => {
      if (!formData.nome_produto) { showError({ title: "Campo obrigatório", description: "Nome do produto é obrigatório." }); return; }
      const numVar = parseInt(formData.variáveis) || 1;
      if (numVar < 1) { showError({ title: "Campo obrigatório", description: "Número de variáveis deve ser no mínimo 1." }); return; }
-     const cats = Array.isArray(formData.categorias_tamanho) ? formData.categorias_tamanho : [];
-     if (cats.length === 0) { showError({ title: "Campo obrigatório", description: "Selecione ao menos uma categoria de tamanho." }); return; }
      if (formData.opcao_acabamento === null || formData.opcao_acabamento === undefined) { showError({ title: "Campo obrigatório", description: "Selecione a opção de acabamentos especiais." }); return; }
 
     try {
@@ -565,7 +538,7 @@ export default function ProdutoComercialPage() {
 
   const handleEdit = (row) => {
     const numVar = parseInt(row.num_variaveis) || parseInt(row.variáveis) || 1;
-    setFormData({ ...row, variáveis: numVar, num_variaveis: numVar, categorias_tamanho: Array.isArray(row.categorias_tamanho) ? row.categorias_tamanho : [] });
+    setFormData({ ...row, variáveis: numVar, num_variaveis: numVar, grade_tamanho_id: row.grade_tamanho_id || null });
     setEditingId(row.id);
     setComposicaoSearch("");
     setModalOpen(true);
@@ -712,58 +685,32 @@ export default function ProdutoComercialPage() {
               <Input value={formData.nome_produto || ""} onChange={e => setFormData(p => ({ ...p, nome_produto: e.target.value }))} placeholder="Ex: Camiseta Manga Curta Esportiva" />
             </div>
 
-            {/* Categorias de Tamanho + Acabamentos Especiais */}
-             <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 200px' }}>
-               <div>
-                 <label className="text-sm font-medium text-slate-900 block mb-2">
-                   Categorias de Tamanho *
-                 </label>
-                 <div className="flex flex-wrap gap-2">
-                   {categoriaTamanhos.map(cat => {
-                     const sel = (Array.isArray(formData.categorias_tamanho) ? formData.categorias_tamanho : []).includes(cat);
-                     return (
-                       <label key={cat} className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
-                         <input
-                           type="checkbox"
-                           checked={sel}
-                           onChange={() => toggleCategoria(cat)}
-                           className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                         />
-                         <span className="text-sm font-medium text-slate-700">{cat}</span>
-                       </label>
-                     );
-                   })}
-                 </div>
-               </div>
-
-               <div>
-                 <label className="text-sm font-medium text-slate-900 block mb-2">
-                   Acabamentos Especiais *
-                 </label>
-                 <div className="flex gap-2">
-                   <label className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors flex-1">
-                     <input
-                       type="radio"
-                       name="acabamento"
-                       checked={formData.opcao_acabamento === true}
-                       onChange={() => setFormData(p => ({ ...p, opcao_acabamento: true }))}
-                       className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                     />
-                     <span className="text-sm font-medium text-slate-700">Sim</span>
-                   </label>
-                   <label className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors flex-1">
-                     <input
-                       type="radio"
-                       name="acabamento"
-                       checked={formData.opcao_acabamento === false}
-                       onChange={() => setFormData(p => ({ ...p, opcao_acabamento: false }))}
-                       className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                     />
-                     <span className="text-sm font-medium text-slate-700">Não</span>
-                   </label>
-                 </div>
-               </div>
-             </div>
+            {/* Acabamentos Especiais */}
+            <div>
+              <label className="text-sm font-medium text-slate-900 block mb-2">Acabamentos Especiais *</label>
+              <div className="flex gap-2">
+                <label className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
+                  <input
+                    type="radio"
+                    name="acabamento"
+                    checked={formData.opcao_acabamento === true}
+                    onChange={() => setFormData(p => ({ ...p, opcao_acabamento: true }))}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-slate-700">Sim</span>
+                </label>
+                <label className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
+                  <input
+                    type="radio"
+                    name="acabamento"
+                    checked={formData.opcao_acabamento === false}
+                    onChange={() => setFormData(p => ({ ...p, opcao_acabamento: false }))}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-slate-700">Não</span>
+                </label>
+              </div>
+            </div>
 
             {/* Grade de Tamanho */}
             <div>
