@@ -139,8 +139,8 @@ export default function TamanhosGlobaisPanel() {
                       onClick={() => handleToggle(t.id, t.ativo)}
                       >
                       {t.ativo
-                        ? <ToggleRight style={{ width: 32, height: 32 }} className="text-green-500" />
-                        : <ToggleLeft style={{ width: 32, height: 32 }} className="text-slate-400" />}
+                        ? <ToggleRight style={{ width: 22, height: 22 }} className="text-green-500" />
+                        : <ToggleLeft style={{ width: 22, height: 22 }} className="text-slate-400" />}
                     </button>
                     <Button
                       size="sm"
