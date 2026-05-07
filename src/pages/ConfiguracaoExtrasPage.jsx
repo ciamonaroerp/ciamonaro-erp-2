@@ -34,6 +34,7 @@ import { useGlobalAlert } from "@/components/GlobalAlertDialog";
 import { useEmpresa } from "@/components/context/EmpresaContext";
 import { useGradesTamanho } from "@/hooks/useGradesTamanho";
 import { formVazio as gradeFormVazio } from "@/domain/gradesTamanhoDomain";
+import GradeItensPanel from "@/components/grades/GradeItensPanel";
 
 // ─── Serviços ──────────────────────────────────────────────────────────────
 
@@ -199,6 +200,7 @@ export default function ConfiguracaoExtrasPage() {
   const [gradeForm, setGradeForm] = useState(gradeFormVazio);
   const [gradeSaving, setGradeSaving] = useState(false);
   const [gradeBusca, setGradeBusca] = useState("");
+  const [gradeSelecionada, setGradeSelecionada] = useState(null);
 
   // ── Estado Tamanhos ──
   const [tamanhoModal, setTamanhoModal] = useState(false);
@@ -968,75 +970,81 @@ export default function ConfiguracaoExtrasPage() {
         </TabsContent>
         {/* ABA 6 — GRADES DE TAMANHO */}
         <TabsContent value="grades" className="space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <Input
-              placeholder="Buscar grade..."
-              value={gradeBusca}
-              onChange={e => setGradeBusca(e.target.value)}
-              className="max-w-xs"
-            />
-            <Button onClick={() => handleGradeOpen()} className="gap-2 bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4" />
-              Nova Grade
-            </Button>
-          </div>
-          <Card className="overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome da Grade</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Data de Criação</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {gradesLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8">
-                      <Loader2 className="h-5 w-5 animate-spin mx-auto text-slate-400" />
-                    </TableCell>
-                  </TableRow>
-                ) : gradesFiltradas.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-slate-500">
-                      Nenhuma grade cadastrada
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  gradesFiltradas.map((grade) => (
-                    <TableRow key={grade.id}>
-                      <TableCell className="font-medium">{grade.nome_grade}</TableCell>
-                      <TableCell>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${grade.ativo ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
-                          {grade.ativo ? "Ativo" : "Inativo"}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-slate-500">
-                        {grade.created_at ? new Date(grade.created_at).toLocaleDateString("pt-BR") : "-"}
-                      </TableCell>
-                      <TableCell className="text-right space-x-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-slate-400 hover:text-blue-600"
-                          title={grade.ativo ? "Desativar" : "Ativar"}
-                          onClick={() => handleGradeToggle(grade.id, grade.ativo)}
-                        >
-                          {grade.ativo
-                            ? <ToggleRight className="h-4 w-4 text-green-500" />
-                            : <ToggleLeft className="h-4 w-4 text-slate-400" />}
-                        </Button>
-                        <Button size="sm" variant="ghost" className="text-slate-400 hover:text-slate-600" onClick={() => handleGradeOpen(grade)}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
+          {gradeSelecionada ? (
+            <GradeItensPanel grade={gradeSelecionada} onVoltar={() => setGradeSelecionada(null)} />
+          ) : (
+            <>
+              <div className="flex items-center justify-between gap-3">
+                <Input
+                  placeholder="Buscar grade..."
+                  value={gradeBusca}
+                  onChange={e => setGradeBusca(e.target.value)}
+                  className="max-w-xs"
+                />
+                <Button onClick={() => handleGradeOpen()} className="gap-2 bg-blue-600 hover:bg-blue-700">
+                  <Plus className="h-4 w-4" />
+                  Nova Grade
+                </Button>
+              </div>
+              <Card className="overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome da Grade</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Data de Criação</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {gradesLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8">
+                          <Loader2 className="h-5 w-5 animate-spin mx-auto text-slate-400" />
+                        </TableCell>
+                      </TableRow>
+                    ) : gradesFiltradas.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8 text-slate-500">
+                          Nenhuma grade cadastrada
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      gradesFiltradas.map((grade) => (
+                        <TableRow key={grade.id} className="cursor-pointer hover:bg-slate-50" onClick={() => setGradeSelecionada(grade)}>
+                          <TableCell className="font-medium">{grade.nome_grade}</TableCell>
+                          <TableCell>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${grade.ativo ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
+                              {grade.ativo ? "Ativo" : "Inativo"}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-slate-500">
+                            {grade.created_at ? new Date(grade.created_at).toLocaleDateString("pt-BR") : "-"}
+                          </TableCell>
+                          <TableCell className="text-right space-x-1" onClick={e => e.stopPropagation()}>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-slate-400 hover:text-blue-600"
+                              title={grade.ativo ? "Desativar" : "Ativar"}
+                              onClick={() => handleGradeToggle(grade.id, grade.ativo)}
+                            >
+                              {grade.ativo
+                                ? <ToggleRight className="h-4 w-4 text-green-500" />
+                                : <ToggleLeft className="h-4 w-4 text-slate-400" />}
+                            </Button>
+                            <Button size="sm" variant="ghost" className="text-slate-400 hover:text-slate-600" onClick={() => handleGradeOpen(grade)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </Card>
+            </>
+          )}
         </TabsContent>
       </Tabs>
 
