@@ -1036,10 +1036,10 @@ export default function ConfiguracaoExtrasPage() {
                               className="text-slate-400 hover:text-blue-600"
                               title={grade.ativo ? "Desativar" : "Ativar"}
                               onClick={() => handleGradeToggle(grade.id, grade.ativo)}
-                            >
+                              >
                               {grade.ativo
-                                ? <ToggleRight className="h-4 w-4 text-green-500" />
-                                : <ToggleLeft className="h-4 w-4 text-slate-400" />}
+                                ? <ToggleRight className="h-6 w-6 text-green-500" />
+                                : <ToggleLeft className="h-6 w-6 text-slate-400" />}
                             </Button>
                             <Button size="sm" variant="ghost" className="text-slate-400 hover:text-slate-600" onClick={() => handleGradeOpen(grade)}>
                               <Pencil className="h-4 w-4" />

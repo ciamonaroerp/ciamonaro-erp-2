@@ -139,10 +139,10 @@ export default function TamanhosGlobaisPanel() {
                       className="text-slate-400 hover:text-blue-600"
                       title={t.ativo ? "Desativar" : "Ativar"}
                       onClick={() => handleToggle(t.id, t.ativo)}
-                    >
+                      >
                       {t.ativo
-                        ? <ToggleRight className="h-4 w-4 text-green-500" />
-                        : <ToggleLeft className="h-4 w-4 text-slate-400" />}
+                        ? <ToggleRight className="h-6 w-6 text-green-500" />
+                        : <ToggleLeft className="h-6 w-6 text-slate-400" />}
                     </Button>
                     <Button
                       size="sm"
