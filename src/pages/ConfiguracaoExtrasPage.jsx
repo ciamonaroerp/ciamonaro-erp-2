@@ -1038,8 +1038,8 @@ export default function ConfiguracaoExtrasPage() {
                               onClick={() => handleGradeToggle(grade.id, grade.ativo)}
                               >
                               {grade.ativo
-                                ? <ToggleRight className="h-8 w-8 text-green-500" />
-                                : <ToggleLeft className="h-8 w-8 text-slate-400" />}
+                                ? <ToggleRight className="h-12 w-12 text-green-500" />
+                                : <ToggleLeft className="h-12 w-12 text-slate-400" />}
                             </Button>
                             <Button size="sm" variant="ghost" className="text-slate-400 hover:text-slate-600" onClick={() => handleGradeOpen(grade)}>
                               <Pencil className="h-4 w-4" />
