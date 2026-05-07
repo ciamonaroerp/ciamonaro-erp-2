@@ -8,7 +8,7 @@ import {
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Loader2, ToggleLeft, ToggleRight, ArrowLeft } from "lucide-react";
+import { Plus, Pencil, Loader2, ToggleLeft, ToggleRight, ArrowLeft } from "lucide-react";
 import { useGradesTamanhoItens } from "@/hooks/useGradesTamanhoItens";
 import { itemFormVazio } from "@/domain/gradesTamanhoItensDomain";
 import { useGlobalAlert } from "@/components/GlobalAlertDialog";
@@ -17,7 +17,7 @@ import { useTamanhos } from "@/hooks/useTamanhos";
 export default function GradeItensPanel({ grade, onVoltar }) {
   const { itens, loading, criar, atualizar, remover, toggleAtivo } = useGradesTamanhoItens(grade?.id);
   const { tamanhos, loading: tamanhosLoading } = useTamanhos();
-  const { showSuccess, showError, showConfirm } = useGlobalAlert();
+  const { showSuccess, showError } = useGlobalAlert();
 
   const [modal, setModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -74,21 +74,8 @@ export default function GradeItensPanel({ grade, onVoltar }) {
     setSaving(false);
   };
 
-  const handleRemover = (id) => {
-    showConfirm({
-      title: "Remover item?",
-      description: "Esta ação não pode ser desfeita.",
-      confirmLabel: "Remover",
-      confirmVariant: "destructive",
-      onConfirm: async () => {
-        try {
-          await remover(id);
-          showSuccess({ title: "Removido", description: "Item removido com sucesso." });
-        } catch (err) {
-          showError({ title: "Erro ao remover", description: err.message });
-        }
-      },
-    });
+  const handleDesativar = (item) => {
+    handleToggle(item.id, item.ativo);
   };
 
   const handleToggle = async (id, ativo) => {
@@ -165,16 +152,18 @@ export default function GradeItensPanel({ grade, onVoltar }) {
                     </span>
                   </TableCell>
                   <TableCell className="text-right space-x-1">
-                    <Button size="sm" variant="ghost" className="text-slate-400 hover:text-blue-600" title={item.ativo ? "Desativar" : "Ativar"} onClick={() => handleToggle(item.id, item.ativo)}>
+                    <Button
+                      size="sm" variant="ghost"
+                      className="text-slate-400 hover:text-blue-600"
+                      title={item.ativo ? "Desativar" : "Ativar"}
+                      onClick={() => handleDesativar(item)}
+                    >
                       {item.ativo
                         ? <ToggleRight className="h-4 w-4 text-green-500" />
                         : <ToggleLeft className="h-4 w-4 text-slate-400" />}
                     </Button>
                     <Button size="sm" variant="ghost" className="text-slate-400 hover:text-slate-600" onClick={() => abrirModal(item)}>
                       <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost" className="text-slate-400 hover:text-red-500" onClick={() => handleRemover(item.id)}>
-                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
                 </TableRow>

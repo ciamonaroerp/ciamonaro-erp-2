@@ -34,9 +34,16 @@ export async function atualizarItem(id, payload) {
   return data;
 }
 
-export async function removerItem(id) {
-  const { error } = await supabase.from(TABELA).delete().eq("id", id);
+// Soft-delete: nunca exclui fisicamente para preservar histórico
+export async function desativarItem(id) {
+  const { data, error } = await supabase
+    .from(TABELA)
+    .update({ ativo: false, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .select()
+    .single();
   if (error) throw new Error(error.message);
+  return data;
 }
 
 export async function toggleAtivoItem(id, ativoAtual) {

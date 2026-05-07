@@ -597,17 +597,16 @@ export default function ConfiguracaoExtrasPage() {
 
   const handleTamanhoDelete = (id) => {
     showConfirm({
-      title: "Deseja excluir?",
-      description: "Ação irreversível",
-      confirmLabel: "Excluir",
-      confirmVariant: "destructive",
+      title: "Desativar tamanho?",
+      description: "O tamanho será desativado. O histórico será preservado e ele poderá ser reativado futuramente.",
+      confirmLabel: "Desativar",
       onConfirm: async () => {
         try {
           await softDelete("config_tamanhos", id);
-          showSuccess({ title: "Removido", description: "Tamanho removido com sucesso." });
+          showSuccess({ title: "Desativado", description: "Tamanho desativado com sucesso." });
           queryClient.invalidateQueries({ queryKey: ["config-extras-tamanhos"] });
         } catch (err) {
-          showError({ title: "Erro ao remover", description: err.message });
+          showError({ title: "Erro ao desativar", description: err.message });
         }
       },
     });

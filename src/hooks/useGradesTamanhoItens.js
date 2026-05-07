@@ -3,7 +3,7 @@ import {
   listarItensPorGrade,
   criarItem,
   atualizarItem,
-  removerItem,
+  desativarItem,
   toggleAtivoItem,
 } from "@/services/gradesTamanhoItensService";
 import {
@@ -39,8 +39,9 @@ export function useGradesTamanhoItens(gradeId) {
     invalidar();
   };
 
+  // Soft-delete: desativa sem excluir fisicamente
   const remover = async (id) => {
-    await removerItem(id);
+    await desativarItem(id);
     invalidar();
   };
 
