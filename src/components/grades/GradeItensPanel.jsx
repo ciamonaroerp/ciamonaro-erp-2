@@ -158,8 +158,8 @@ export default function GradeItensPanel({ grade, onVoltar }) {
                       onClick={() => handleDesativar(item)}
                       >
                       {item.ativo
-                        ? <ToggleRight style={{ width: 40, height: 40 }} className="text-green-500" />
-                        : <ToggleLeft style={{ width: 40, height: 40 }} className="text-slate-400" />}
+                        ? <ToggleRight style={{ width: 32, height: 32 }} className="text-green-500" />
+                        : <ToggleLeft style={{ width: 32, height: 32 }} className="text-slate-400" />}
                     </button>
                     <Button size="sm" variant="ghost" className="text-slate-400 hover:text-slate-600" onClick={() => abrirModal(item)}>
                       <Pencil className="h-4 w-4" />
