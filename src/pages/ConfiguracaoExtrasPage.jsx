@@ -1030,17 +1030,15 @@ export default function ConfiguracaoExtrasPage() {
                             {grade.created_at ? new Date(grade.created_at).toLocaleDateString("pt-BR") : "-"}
                           </TableCell>
                           <TableCell className="text-right space-x-1" onClick={e => e.stopPropagation()}>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-slate-400 hover:text-blue-600"
+                            <button
+                              className="text-slate-400 hover:text-blue-600 p-1 rounded"
                               title={grade.ativo ? "Desativar" : "Ativar"}
                               onClick={() => handleGradeToggle(grade.id, grade.ativo)}
                               >
                               {grade.ativo
-                                ? <ToggleRight className="h-12 w-12 text-green-500" />
-                                : <ToggleLeft className="h-12 w-12 text-slate-400" />}
-                            </Button>
+                                ? <ToggleRight style={{ width: 40, height: 40 }} className="text-green-500" />
+                                : <ToggleLeft style={{ width: 40, height: 40 }} className="text-slate-400" />}
+                            </button>
                             <Button size="sm" variant="ghost" className="text-slate-400 hover:text-slate-600" onClick={() => handleGradeOpen(grade)}>
                               <Pencil className="h-4 w-4" />
                             </Button>

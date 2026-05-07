@@ -152,16 +152,15 @@ export default function GradeItensPanel({ grade, onVoltar }) {
                     </span>
                   </TableCell>
                   <TableCell className="text-right space-x-1">
-                    <Button
-                      size="sm" variant="ghost"
-                      className="text-slate-400 hover:text-blue-600"
+                    <button
+                      className="text-slate-400 hover:text-blue-600 p-1 rounded"
                       title={item.ativo ? "Desativar" : "Ativar"}
                       onClick={() => handleDesativar(item)}
                       >
                       {item.ativo
-                        ? <ToggleRight className="h-16 w-16 text-green-500" />
-                        : <ToggleLeft className="h-16 w-16 text-slate-400" />}
-                    </Button>
+                        ? <ToggleRight style={{ width: 40, height: 40 }} className="text-green-500" />
+                        : <ToggleLeft style={{ width: 40, height: 40 }} className="text-slate-400" />}
+                    </button>
                     <Button size="sm" variant="ghost" className="text-slate-400 hover:text-slate-600" onClick={() => abrirModal(item)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
